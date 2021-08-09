@@ -1,0 +1,45 @@
+.holdingcontainer{
+    width: 100%;
+    display: flex;
+    background: #ffc728;
+    box-sizing: border-box;
+    flex-direction: row;
+}
+
+.internalcontainerL{
+    flex: 1;
+    background: red;
+    padding: 30px;
+    font-size: 12px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.internalcontainerR{
+    flex: 1;
+    background: cyan;
+    padding: 30px;
+    font-size: 12px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+@media screen and (max-width: 768px){
+    .holdingcontainer{
+        flex-direction: column-reverse;
+    }
+}
+
+img{
+    width: 50%;
+}
+
+.header {
+    padding: 60px;
+    text-align: center;
+    background: #1abc9c;
+    color: white;
+    font-size: 30px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  /* Page Content */
+  .content {padding:20px;}

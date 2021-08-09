@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/QUICK IMAGES2.png">
+    <meta name="author" content="Olivier Luethy">
+
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+
+    <meta name="description" content="On this website you can find a lot of beautiful pictures you'll like.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css">
+    <script src="https://kit.fontawesome.com/ebfafc2eb8.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="captured with a camera.css">
+    <!-- <title>ÇOK GÜZEL IMAGES</title> -->
+    <title>Quick Images</title>
+</head>
+
+<body id="body">
+    <!--====== Navigation Section ======-->
+
+    <nav id="goOut">
+        <div class="logo">
+            <h4>Quick Images</h4>
+        </div>
+        <ul class="nav-links">
+            <li>
+                <a class="active" href="index.html">Home</a>
+            </li>
+            <li>
+                <a href="About us.html">About us</a>
+            </li>
+            <li>
+                <a href="#">Projects</a>
+            </li>
+        </ul>
+        <div class="burger">
+            <div class="line1"></div>
+            <div class="line2"></div>
+            <div class="line3"></div>
+        </div>
+    </nav>
+
+
+    <!-- ==== Intro Section Start ==== -->
+    <header>
+
+        <div class="intro-section" id="home">
+            <div class="bg-img"></div>
+            <div class="intro-content">
+
+                <h1>Photos made by a camera.</h1>
+                <h6>Sony CyberShot DSC-HX7V</h6>
+
+                <div class="hero_footer_item">
+                    <a data-photo-modal="3965534" data-photo-modal-initialized="true">
+                        A photo of the Drone,<br>
+                        photo taken from the internet.
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </header>
+
+    <div class="Second-Nav">
+        <div id="wrapper">
+            <ul>
+                <li class="different"><a href="index.html">Home</a></li>
+                <li class="different"><a href="made by drone.html">Made by drone</a></li>
+                <li class="different-active"><a class="active" href="captured with a camera.html">Captured with a
+                        camera</a></li>
+                <li class="different"><a href="">Our best images</a></li>
+                <li class="different"><a href="">Videos</a></li>
+            </ul>
+        </div>
+    </div>
+    <hr>
+
+
+    <!-- <svg class="flag flag-switzerland" width="100px" height="100px">
+        <rect width="100%" height="100%" fill="red" />
+        <rect x="40%" y="15%" width="20%" height="70%" fill="white" />
+        <rect x="15%" y="40%" width="70%" height="20%" fill="white" />
+    </svg>
+
+
+    <svg class="flagi flag-germany" width="100px" height="100px">
+        <rect width="100%" height="100%" fill="blue" />
+        <rect width="100%" height="50%" fill="white" x="0" y="0" />
+    </svg> -->
+
+    <!-- Main Section -->
+    <div class="mainTitle">
+        <h1>Photoes taken from a camera</h1>
+    </div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div id="caption"></div>
+        <a id="downloadImg" class="Download-Text">
+            <div class="Download-Button">
+                <i class="fa fa-download"></i>
+                Download </div>
+        </a>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img1', 'images/DSC06484.JPG')">
+            <a href="images/DSC06484.JPG"></a>
+            <img id="img1" src="images/DSC06484.JPG" alt="Picture of Lucerne, taken from Meggenhorn Castle." width="600"
+                height="400" id="one">
+            </a>
+            <div class="desc">Picture of Lucerne, taken from Meggenhorn Castle.</div>
+        </div>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img2', 'images/DSC06484.JPG')">
+            <a href="images/DSC06484.JPG"></a>
+            <img id="img2" src="images/DSC06484.JPG" alt="A picture of Pilatus, taken from Meggenhorn Castle."
+                width="600" height="400" id="two">
+            </a>
+            <div class="desc">A picture of Pilatus, taken from Meggenhorn Castle.</div>
+        </div>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img3')">
+            <a href="images/DSC06487.JPG"></a>
+            <img id="img3" src="images/DSC06487.JPG" alt="Picture of Lucerne, taken from Meggenhorn Castle." width="600"
+                height="400" id="tree">
+            </a>
+            <div class="desc">Picture of Lucerne, taken from Meggenhorn Castle.</div>
+        </div>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img4')">
+            <a href="images/DSC06488.JPG"></a>
+            <img id="img4" src="images/DSC06488.JPG" alt="Picture of Lucerne, taken from Meggenhorn Castle." width="600"
+                height="400" id="four">
+            </a>
+            <div class="desc">Picture of Lucerne, taken from Meggenhorn Castle.</div>
+        </div>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img5')">
+            <a href="images/DSC06489.JPG"></a>
+            <img id="img5" src="images/DSC06489.JPG" alt="Picture of Horw(Lucerne) and Pilatus." width="600"
+                height="400" id="five">
+            </a>
+            <div class="desc">Picture of Horw(Lucerne) and Pilatus.</div>
+        </div>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img6')">
+            <a href="images/DSC06490.JPG"></a>
+            <img id="img6" src="images/DSC06490.JPG" alt="Picture of the sunset, taken from Meggenhorn Castle."
+                width="600" height="400" id="six">
+            </a>
+            <div class="desc">Picture of the sunset, taken from Meggenhorn Castle.</div>
+        </div>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img7')">
+            <a href="images/DSC06491.JPG"></a>
+            <img id="img7" src="images/DSC06491.JPG"
+                alt="Picture of the sunset, Horw and Lucerne, taken from Meggenhorn Castle. " width="600" height="400"
+                id="seven">
+            </a>
+            <div class="desc">Picture of the
+                sunset, Horw and Lucerne</div>
+        </div>
+    </div>
+
+    <div class="responsive">
+        <div class="gallery" onclick="openModalImage('img8')">
+            <a href="images/DSC06494.JPG"></a>
+            <img id="img8" src="images/DSC06494.JPG"
+                alt="Picture of the sunset, Horw and Lucerne - Taken from Meggenhorn Castle." width="600" height="400"
+                id="eight">
+            </a>
+            <div class="desc">Picture of the sunset.</div>
+        </div>
+    </div>
+
+    <div class="clearfix"></div><br><br>
+
+    <div id="footer">
+        <p id="year"></p>
+    </div>
+
+    <script type="text/javascript" src="index.js"></script>
+</body>
+
+</html>
