@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 52" fill="none" role="img" aria-label="Fotolio">
+  <g stroke="var(--accent, #0E7C86)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="20" cy="26" r="17"/>
+    <path d="M 26.93 30 L20 34 L13.07 30 L13.07 22 L20 18 L26.93 22 Z"/>
+    <line x1="26.93" y1="30.00" x2="20.00" y2="43.00"/><line x1="20.00" y1="34.00" x2="5.28" y2="34.50"/><line x1="13.07" y1="30.00" x2="5.28" y2="17.50"/><line x1="13.07" y1="22.00" x2="20.00" y2="9.00"/><line x1="20.00" y1="18.00" x2="34.72" y2="17.50"/><line x1="26.93" y1="22.00" x2="34.72" y2="34.50"/>
+  </g>
+  <text x="48" y="35" font-family="Archivo, 'Segoe UI', system-ui, sans-serif"
+        font-size="30" font-weight="800" letter-spacing="0.5" fill="var(--ink, #16181D)">Fotolio</text>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"
+     stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"
+     role="img" aria-label="Fotolio aperture mark">
+  <circle cx="50" cy="50" r="42"/>
+  <path d="M 67.32 60 L50 70 L32.68 60 L32.68 40 L50 30 L67.32 40 Z"/>
+  <line x1="67.32" y1="60.00" x2="50.00" y2="92.00"/><line x1="50.00" y1="70.00" x2="13.63" y2="71.00"/><line x1="32.68" y1="60.00" x2="13.63" y2="29.00"/><line x1="32.68" y1="40.00" x2="50.00" y2="8.00"/><line x1="50.00" y1="30.00" x2="86.37" y2="29.00"/><line x1="67.32" y1="40.00" x2="86.37" y2="71.00"/>
+</svg>
