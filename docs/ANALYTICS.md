@@ -48,8 +48,10 @@ visitor's page.
 `overview` returns visitors, pageviews, views/visitor, top pages, referrers,
 countries, devices, browsers, and a dense per-day pageview trend. `realtime`
 returns the active-session count (last 5 min, configurable), the 20 most recent
-sessions with their current page, and the 30 most recent events. The Analytics
-panel polls `realtime` every 5 seconds.
+sessions with their current page, the 30 most recent events, and a **`located`**
+array (every session that resolved to a coordinate, each flagged `active`) plus a
+**`located_countries`** count for the globe. The Analytics panel polls `realtime`
+every 5 seconds, which is what keeps the active globe markers live.
 
 ## Dashboard — the Analytics tab
 
@@ -58,19 +60,52 @@ Overview. The page renders `components/Analytics.jsx` (stats, trend, top pages,
 referrers, countries, devices, browsers, live feed) plus an interactive **world
 globe** (`components/VisitorGlobe.jsx`).
 
-The globe uses **react-globe.gl** (the React binding for `globe.gl`, built on
-three.js — the most widely used globe library). Each located visitor country is
-a point sized by visitor count, with a pulsing ring; it auto-rotates and can be
-dragged to spin. Country codes are mapped to marker coordinates via a bundled
-centroid table (`lib/countryCentroids.js`) so the globe works **fully offline**;
-an Earth texture loads from a CDN on top when reachable, and there is a graceful
-empty state. The page is lazy-loaded so three.js stays out of the main bundle.
+The globe uses **cobe** (<https://cobe.vercel.app>) — a tiny (~5 KB) WebGL
+globe. It is themed to the styleguide: a dark graphite sphere with teal markers
+and glow, smooth auto-rotation, and pointer-drag to spin. It plots two marker
+layers, fed **live** from the realtime endpoint (`located`):
 
-## GeoIP — self-hosted country lookup
+- **historical visitors** — small, steady teal dots;
+- **currently-active visitors** — larger, **pulsing** teal markers showing where
+  people are viewing the site from right now.
 
-Countries are resolved from a **self-hosted GeoLite2-Country database** with a
-dependency-free pure-PHP reader (`Fotolio\Support\MaxMindDbReader`, used via
-`GeoIpService`). There are **no external calls** and **no API key at runtime**.
+The realtime poll (every 5 s) updates the markers in place — the render loop
+reads the latest marker buffer each frame, so new active visitors appear and
+pulse without recreating the globe. The "N countries located" counter and the
+empty state reflect the real located data. The page is lazy-loaded so the globe
+stays out of the main bundle.
+
+## GeoIP — self-hosted location lookup (country + coordinates)
+
+Locations are resolved with a dependency-free pure-PHP reader
+(`Fotolio\Support\MaxMindDbReader`, used via `GeoIpService`). There are **no
+external calls** and **no API key at runtime**. `GeoIpService::lookup()` returns
+a country **and plottable latitude/longitude**, resolved in this order:
+
+1. **GeoLite2-City** location (`location.latitude` / `location.longitude`) — used
+   when a City database is installed (the reader decodes MMDB doubles);
+2. otherwise the **country code → a bundled country-centroid** coordinate
+   (`Fotolio\Support\CountryCentroids`, the server twin of
+   `lib/countryCentroids.js`), which also works with the smaller Country DB;
+3. otherwise **"Unknown"** with no coordinates.
+
+Resolved coordinates are stored on the session (`analytics_sessions.lat/.lng`,
+migration `010`, which backfills existing visits) and drive the globe.
+
+### Loopback / private / non-production → demo coordinate
+
+The demo runs on **localhost**, whose loopback IP has no real location — which is
+why the globe used to sit empty. When a visit's IP is loopback/private, **or the
+app is not in a production environment**, `GeoIpService` falls back to a
+**configurable demo coordinate** (default **Lucerne, CH**) so the globe is
+demonstrably live locally. A small deterministic per-session jitter fans multiple
+local visits out around the demo city instead of stacking them on one pixel.
+**Real public IPs in production resolve normally** — the demo fallback only
+applies to unresolvable IPs or non-prod environments. Toggle it with
+`ANALYTICS_DEMO_GEO`; it defaults **on** whenever `APP_ENV` ≠ `production`.
+
+Countries can additionally be resolved from a **self-hosted GeoLite2-Country (or
+City) database**.
 
 **The database is not bundled in the repo** (MaxMind's licence requires you to
 download it under your own account). Until it is installed, every lookup
@@ -99,8 +134,17 @@ Config knobs (`api/src/Core/Config.php`):
 
 | Key / env | Default | Meaning |
 |-----------|---------|---------|
-| `analytics.geolite_path` / `GEOLITE2_DB` | `storage/GeoLite2-Country.mmdb` | path to the `.mmdb` |
+| `analytics.geolite_path` / `GEOLITE2_DB` | `storage/GeoLite2-Country.mmdb` | path to the `.mmdb` (Country **or** City) |
 | `analytics.active_window` / `ANALYTICS_ACTIVE_WINDOW` | `300` | "active now" window, seconds |
+| `analytics.demo_geo` / `ANALYTICS_DEMO_GEO` | on when `APP_ENV`≠`production` | plot unresolvable/loopback visits at the demo coordinate |
+| `analytics.demo_lat` / `ANALYTICS_DEMO_LAT` | `47.0502` | demo latitude (Lucerne) |
+| `analytics.demo_lng` / `ANALYTICS_DEMO_LNG` | `8.3093` | demo longitude (Lucerne) |
+| `analytics.demo_country` / `ANALYTICS_DEMO_COUNTRY` | `Switzerland` | demo country name |
+| `analytics.demo_country_code` / `ANALYTICS_DEMO_CC` | `CH` | demo country code |
+
+> To resolve **city-level** coordinates for real visitors, install
+> **GeoLite2-City** instead of Country and point `GEOLITE2_DB` at it — the reader
+> and `GeoIpService` pick up `location.latitude/longitude` automatically.
 
 ## Privacy & GDPR — read before going live
 
