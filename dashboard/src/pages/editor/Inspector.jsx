@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, IconButton, Spinner } from '../../components/ui/Button';
+import { useEffect, useState } from 'react';
+import { Button, IconButton } from '../../components/ui/Button';
 import { Field, Input, Textarea, Toggle, Segmented } from '../../components/ui/Controls';
 import { Icon } from '../../components/ui/Icon';
 import { Sortable } from '../../components/Sortable';
 import { ImagePicker } from '../../components/ImagePicker';
-import { classNames } from '../../lib/format';
 import { findGallery, findPage, readHeader } from './draftUtils';
 
 /* Small building blocks --------------------------------------------------- */
@@ -431,5 +430,3 @@ function PagePanel({ e, id }) {
     </div>
   );
 }
-
-export { SitePanel };

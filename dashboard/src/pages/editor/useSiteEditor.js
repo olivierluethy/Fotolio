@@ -262,7 +262,9 @@ export function useSiteEditor() {
         h.image_ids = ids.map(Number);
         if (h.image_ids.length < 2 && h.mode === 'slideshow') h.mode = 'single';
       });
-      reloadFragment('hero');
+      // A full reload so the top nav's over-hero treatment tracks a hero
+      // appearing or disappearing, and the slideshow re-inits cleanly.
+      reloadFull();
     },
     setHeroText(target, field, value) {
       mutate((d) => { const h = ensureHeader(d, target, galleriesById); h.overlay = h.overlay || {}; h.overlay[field] = value; });

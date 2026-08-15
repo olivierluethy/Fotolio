@@ -18,7 +18,7 @@ use Fotolio\Services\SiteStateService;
  */
 final class SiteEditorController extends Controller
 {
-    private const EDIT_TTL = 3600;      // 1h — refreshed by the editor as needed
+    private const EDIT_TTL = 28800;     // 8h — comfortably spans an editing session
     private const PREVIEW_TTL = 86400;  // 24h shareable clean preview
 
     public function __construct(
