@@ -10,6 +10,11 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/media': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      // The Site Editor iframe + Preview render the real PHP theme, which
+      // pulls its stylesheet, script and favicons from the API origin.
+      '/assets': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/favicon.svg': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/favicon-32.png': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
   build: {
