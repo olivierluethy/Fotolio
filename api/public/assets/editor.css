@@ -1,0 +1,91 @@
+/* Fotolio Site Editor — edit-mode affordances layered over the real theme.
+   Loaded only in edit mode (the iframe canvas). Uses styleguide tokens so the
+   editing chrome belongs to the product; never restyles the site itself. */
+
+body.is-editing { cursor: default; }
+
+/* Editable regions: a quiet outline on hover, a labelled affordance. */
+body.is-editing [data-edit-region] { position: relative; }
+body.is-editing [data-edit-region]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  border: 1.5px dashed transparent; border-radius: 10px;
+  transition: border-color .15s var(--ease-out), background-color .15s var(--ease-out);
+}
+body.is-editing [data-edit-region]:hover::after {
+  border-color: color-mix(in srgb, var(--accent-bright) 70%, transparent);
+}
+body.is-editing [data-edit-region].fotolio-selected::after {
+  border-style: solid;
+  border-color: var(--accent-bright);
+  background: color-mix(in srgb, var(--accent-bright) 8%, transparent);
+}
+
+/* Inline-editable text. */
+body.is-editing [data-editable] {
+  cursor: text; outline: none; border-radius: 6px;
+  transition: box-shadow .15s var(--ease-out), background-color .15s var(--ease-out);
+  position: relative; z-index: 6;
+}
+body.is-editing [data-editable]:hover {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-bright) 45%, transparent);
+}
+body.is-editing [data-editable]:focus {
+  box-shadow: 0 0 0 2px var(--accent-bright);
+  background: color-mix(in srgb, var(--accent-bright) 12%, transparent);
+}
+/* Empty-state placeholders. */
+body.is-editing [data-editable][data-placeholder]:empty::before {
+  content: attr(data-placeholder); opacity: .6; pointer-events: none;
+}
+body.is-editing .hero [data-editable][data-placeholder]:empty::before { color: rgba(255,255,255,.7); }
+body.is-editing .prose [data-editable][data-placeholder]:empty::before { color: var(--ink-faint); }
+body.is-editing .hero .subtitle.is-empty { min-height: 1.4em; }
+
+/* Hero "Edit hero" hint. */
+body.is-editing .fx-edit-hint {
+  position: absolute; bottom: 18px; left: 24px; z-index: 8;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: #fff;
+  background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.35);
+  padding: 8px 14px; border-radius: 999px; cursor: pointer; backdrop-filter: blur(8px);
+  transition: background .2s var(--ease-out), transform .15s var(--ease-out);
+}
+body.is-editing .fx-edit-hint:hover { background: var(--accent); transform: translateY(-1px); }
+body.is-editing .fx-edit-hint .fx-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent-bright); }
+
+/* Photo grid tiles: clickable to open the gallery panel, never zoom. */
+body.is-editing .tile.is-editable { cursor: pointer; }
+body.is-editing .tile.is-editable:hover { outline: 2px solid var(--accent-bright); outline-offset: -2px; }
+
+/* Secondary nav in edit mode. */
+body.is-editing .subnav.is-editable a[data-nav-item] { position: relative; }
+body.is-editing .subnav a.nav-anim {
+  transition: opacity .28s var(--ease-out), max-width .28s var(--ease-out), padding .28s var(--ease-out), transform .28s var(--ease-out);
+  overflow: hidden; white-space: nowrap; max-width: 240px;
+}
+body.is-editing .subnav a.nav-anim.leaving { opacity: 0; max-width: 0; padding-left: 0; padding-right: 0; transform: translateY(-4px); }
+body.is-editing .subnav a.nav-anim.entering { opacity: 0; max-width: 0; padding-left: 0; padding-right: 0; }
+
+/* Page blocks: hover reveals a remove control. */
+body.is-editing .block-wrap { position: relative; border-radius: 8px; }
+body.is-editing .block-wrap:hover { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent-bright) 40%, transparent); }
+body.is-editing .block-remove {
+  position: absolute; top: 6px; right: -6px; z-index: 7;
+  width: 26px; height: 26px; border-radius: 999px; border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--ink-muted); cursor: pointer;
+  display: none; place-items: center; font-size: 12px; box-shadow: var(--shadow-sm);
+}
+body.is-editing .block-wrap:hover .block-remove { display: grid; }
+body.is-editing .block-remove:hover { color: var(--danger); border-color: var(--danger); }
+body.is-editing .prose-empty-hint { color: var(--ink-faint); font-style: italic; }
+
+/* A brief highlight pulse the bridge can trigger on a region (nav toggle). */
+@keyframes fotolioPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-bright) 60%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+body.is-editing .fotolio-pulse { animation: fotolioPulse .9s var(--ease-out); border-radius: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-editing .subnav a.nav-anim, body.is-editing .fotolio-pulse { transition: none; animation: none; }
+}
