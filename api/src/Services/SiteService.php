@@ -42,6 +42,13 @@ final class SiteService
             'updated_at' => Database::now(),
         ]);
 
+        // Seed the draft/published state documents for the editor + public site.
+        $doc = json_encode((new SiteStateService())->composeFromTables($siteId));
+        Database::update('sites', [
+            'draft_state' => $doc,
+            'published_state' => $doc,
+        ], 'id = :id', ['id' => $siteId]);
+
         return $siteId;
     }
 
@@ -142,6 +149,9 @@ final class SiteService
         $site['home_header'] = $site['home_header'] ? json_decode($site['home_header'], true) : self::defaultHeader();
         $site['settings'] = $site['settings'] ? json_decode($site['settings'], true) : [];
         $site['public_url'] = $this->publicUrl($site);
+        // The full state documents are served by the Site Editor endpoint, not
+        // in every /site payload — keep this response lean.
+        unset($site['draft_state'], $site['published_state']);
         return $site;
     }
 
