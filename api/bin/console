@@ -1,0 +1,47 @@
+#!/usr/bin/env php
+<?php
+
+use Fotolio\Core\Migrator;
+use Fotolio\Database\Seeder;
+
+require __DIR__ . '/../bootstrap.php';
+
+$command = $argv[1] ?? 'help';
+$migrator = new Migrator(__DIR__ . '/../migrations');
+
+switch ($command) {
+    case 'migrate':
+        $ran = $migrator->migrate();
+        echo $ran ? "Migrated:\n  " . implode("\n  ", $ran) . "\n" : "Nothing to migrate.\n";
+        break;
+
+    case 'migrate:fresh':
+        $ran = $migrator->fresh();
+        echo "Dropped all tables and re-ran:\n  " . implode("\n  ", $ran) . "\n";
+        break;
+
+    case 'seed':
+        (new Seeder())->run();
+        echo "Seeded demo account and photos.\n";
+        break;
+
+    case 'setup':
+        $migrator->migrate();
+        (new Seeder())->run();
+        echo "Setup complete.\n";
+        break;
+
+    case 'fresh':
+        $migrator->fresh();
+        (new Seeder())->run();
+        echo "Fresh database + seed complete.\n";
+        break;
+
+    default:
+        echo "Fotolio console\n";
+        echo "  php bin/console migrate         Run pending migrations\n";
+        echo "  php bin/console migrate:fresh   Drop everything and re-migrate\n";
+        echo "  php bin/console seed            Seed demo account + photos\n";
+        echo "  php bin/console setup           Migrate + seed\n";
+        echo "  php bin/console fresh           Fresh migrate + seed\n";
+}
