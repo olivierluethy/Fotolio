@@ -73,7 +73,15 @@ php bin/console seed        # optional demo data
 ```
 
 The migration runner is driver-aware — the same migrations produce the MySQL schema in production
-and SQLite locally.
+and SQLite locally. Migration `008_add_site_state` adds the editor's `draft_state` / `published_state`
+documents to `sites` and **backfills both** from existing galleries/pages/photos, so the live Site
+Editor and the public site work immediately after it runs — no manual data step.
+
+> **Site Editor assets.** The editor canvas and Preview render the real PHP theme, which loads
+> `/assets/theme.css`, `/assets/editor.css`, `/assets/editor-bridge.js` and `/assets/theme.js` from
+> the API origin. When the dashboard is served same-origin by `api/public/index.php` (the default,
+> from `api/public/app/`), these resolve natively. If you serve the SPA from a separate origin,
+> proxy `/assets`, `/media` and `/api` to PHP (as `dashboard/vite.config.js` does in dev).
 
 ---
 
