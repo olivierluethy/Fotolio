@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Design tokens (docs/STYLEGUIDE.md) ---------------------------------- */
+:root {
+  --bg: #FBFBFA; --surface: #FFFFFF; --surface-2: #F4F4F2; --surface-3: #ECECE9;
+  --ink: #16181D; --ink-muted: #5A5F6B; --ink-faint: #8A909C;
+  --border: #E4E4E1; --border-strong: #D3D3CF;
+  --accent: #0E7C86; --accent-hover: #0A626A; --accent-bright: #17B0BD;
+  --accent-weak: #E3F1F2; --on-accent: #FFFFFF;
+  --success: #2E7D5B; --warn: #C9821E; --danger: #C4443B;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.05);
+  --shadow-md: 0 4px 12px -2px rgba(16,24,40,.08), 0 2px 6px -2px rgba(16,24,40,.05);
+  --shadow-lg: 0 16px 40px -8px rgba(16,24,40,.16), 0 4px 12px -4px rgba(16,24,40,.08);
+}
+:root[data-theme="dark"] {
+  --bg: #0E0F12; --surface: #16181C; --surface-2: #1E2126; --surface-3: #262A31;
+  --ink: #F2F3F4; --ink-muted: #A0A6B0; --ink-faint: #6B7280;
+  --border: #26292F; --border-strong: #343943;
+  --accent: #22B8C4; --accent-hover: #38C8D2; --accent-bright: #57D6DF;
+  --accent-weak: #0E2E31; --on-accent: #062326;
+  --success: #4FB988; --warn: #E4A94C; --danger: #E86A60;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 6px 18px -4px rgba(0,0,0,.5);
+  --shadow-lg: 0 24px 50px -10px rgba(0,0,0,.6);
+}
+
+@layer base {
+  * { border-color: var(--border); }
+  html, body, #root { height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-weak); }
+  /* Scrollbars, quietly on-brand */
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 3px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+}
+
+@layer components {
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .card { @apply bg-surface border rounded-lg shadow-sm; }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-ui font-semibold rounded-md
+           px-4 h-10 text-sm transition-all duration-150 ease-out select-none;
+  }
+  .btn:disabled { @apply opacity-45 cursor-not-allowed; }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:not(:disabled):hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-primary:not(:disabled):active { transform: none; }
+  .btn-secondary { @apply border; background: var(--surface); color: var(--ink); border-color: var(--border-strong); }
+  .btn-secondary:not(:disabled):hover { background: var(--surface-2); }
+  .btn-ghost { color: var(--ink-muted); }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--ink); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { filter: brightness(1.05); }
+  .btn-sm { @apply h-8 px-3 text-[13px]; }
+  .btn-lg { @apply h-12 px-6 text-base; }
+
+  .input {
+    @apply w-full h-10 px-3 rounded-sm border bg-surface text-sm text-ink;
+    border-color: var(--border-strong);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .input::placeholder { color: var(--ink-faint); }
+  .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent); }
+  textarea.input { @apply h-auto py-2 leading-relaxed; }
+  .label { @apply block text-[13px] font-medium mb-1.5; color: var(--ink-muted); }
+
+  .badge {
+    @apply inline-flex items-center gap-1 font-mono text-[11px] font-medium px-2 py-0.5 rounded-full;
+    background: var(--surface-2); color: var(--ink-muted);
+  }
+  .badge-accent { background: var(--accent-weak); color: var(--accent); }
+  .badge-success { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 text-[13px] px-2.5 py-1 rounded-sm border;
+    background: var(--surface); color: var(--ink-muted);
+  }
+  .link { color: var(--accent); }
+  .link:hover { text-decoration: underline; }
+}
+
+/* Toast animation */
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.toast-in { animation: toastIn .25s cubic-bezier(0.22,1,0.36,1); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
