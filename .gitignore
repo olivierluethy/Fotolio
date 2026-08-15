@@ -1,0 +1,14 @@
+# dependencies / build
+node_modules/
+dashboard/dist/
+api/vendor/
+# env & local db
+api/.env
+api/storage/*.sqlite
+api/storage/*.sqlite-*
+api/storage/originals/*
+api/storage/tmp/*
+api/public/media/*
+!**/.gitkeep
+# os
+.DS_Store

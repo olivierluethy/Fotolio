@@ -1,0 +1,8 @@
+/vendor/
+/.env
+/storage/*.sqlite
+/storage/originals/*
+/storage/tmp/*
+!/storage/originals/.gitkeep
+/public/media/*
+!/public/media/.gitkeep
