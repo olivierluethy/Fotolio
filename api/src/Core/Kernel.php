@@ -9,6 +9,7 @@ use Fotolio\Controllers\ImageController;
 use Fotolio\Controllers\OAuthController;
 use Fotolio\Controllers\PageController;
 use Fotolio\Controllers\SiteController;
+use Fotolio\Controllers\SiteEditorController;
 use Fotolio\Controllers\UploadController;
 use Fotolio\Middleware\AuthMiddleware;
 
@@ -91,11 +92,23 @@ final class Kernel
         // Signature-gated original stream (image tag src can't send bearer headers).
         $r->get('/api/images/{id}/original', [ImageController::class, 'original']);
 
+        // Token-gated Site Editor canvas + Preview (the iframe loads these
+        // without an auth header — the signed token is the credential).
+        $r->get('/api/site/editor/render', [SiteEditorController::class, 'render']);
+        $r->get('/api/site/preview', [SiteEditorController::class, 'preview']);
+
         $r->group($auth, function (Router $r) {
             // ---- Site + publishing ---------------------------------------
             $r->get('/api/site', [SiteController::class, 'show']);
             $r->patch('/api/site', [SiteController::class, 'update']);
             $r->post('/api/site/publish', [SiteController::class, 'publish']);
+
+            // ---- Live Site Editor: draft / publish / discard / preview ----
+            $r->get('/api/site/editor', [SiteEditorController::class, 'show']);
+            $r->patch('/api/site/editor/draft', [SiteEditorController::class, 'saveDraft']);
+            $r->post('/api/site/editor/publish', [SiteEditorController::class, 'publish']);
+            $r->post('/api/site/editor/discard', [SiteEditorController::class, 'discard']);
+            $r->post('/api/site/editor/preview-token', [SiteEditorController::class, 'previewToken']);
             $r->put('/api/site/subdomain', [DomainController::class, 'setSubdomain']);
             $r->put('/api/site/domain', [DomainController::class, 'setDomain']);
             $r->post('/api/site/domain/verify', [DomainController::class, 'verify']);
