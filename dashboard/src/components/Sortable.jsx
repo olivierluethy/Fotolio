@@ -5,9 +5,11 @@ import { useState } from 'react';
  * `items` must have stable `id`. Calls onReorder(newItems) after a drop.
  * `render(item, dragHandleProps)` renders each row/cell.
  */
-export function Sortable({ items, onReorder, render, className = '', itemClassName = '' }) {
+export function Sortable({ items, onReorder, render, children, className = '', itemClassName = '' }) {
   const [dragId, setDragId] = useState(null);
   const [overId, setOverId] = useState(null);
+  // Accept either a `render` prop or a function-as-child.
+  const renderItem = typeof render === 'function' ? render : (typeof children === 'function' ? children : () => null);
 
   const handleDrop = () => {
     if (dragId == null || overId == null || dragId === overId) {
@@ -43,7 +45,7 @@ export function Sortable({ items, onReorder, render, className = '', itemClassNa
             transition: 'opacity .15s',
           }}
         >
-          {render(item)}
+          {renderItem(item)}
         </div>
       ))}
     </div>
