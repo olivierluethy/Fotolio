@@ -6,28 +6,42 @@ use Fotolio\Core\Database;
 use Fotolio\Core\Response;
 
 /**
- * Server-side renderer for published portfolio sites. Photography-first, fast,
- * SEO-friendly. Uses plain PHP templates in src/Views/public themed from the
- * Fotolio styleguide tokens.
+ * Server-side renderer for portfolio sites. Photography-first, fast,
+ * SEO-friendly. Renders a **state document** (published_state for the live
+ * site, draft_state for the editor and preview) through plain PHP templates
+ * themed from the Fotolio styleguide.
+ *
+ * Modes:
+ *   live    — the public site (published_state), no edit affordances.
+ *   edit    — the Site Editor iframe canvas (draft_state) with data-editable
+ *             markers + the postMessage bridge.
+ *   preview — a clean, chrome-free render of draft_state (no edit affordances).
  */
 final class PublicRenderer
 {
+    public string $mode = 'live';
+    public ?string $token = null;
+
     public function __construct(
-        private SiteService $sites,
-        private GalleryService $galleries,
-        private PageService $pages,
+        private SiteStateService $state,
         private ImageService $images,
     ) {
     }
 
-    public function render(array $siteRow, string $path): Response
+    public function render(array $siteRow, string $path, string $mode = 'live', ?array $doc = null, ?string $token = null): Response
     {
-        $site = $this->sites->find((int) $siteRow['id']);
-        $galleries = $this->galleries->list((int) $site['id']);
-        $pages = array_values(array_filter(
-            $this->pages->list((int) $site['id']),
-            fn ($p) => $p['published']
-        ));
+        $this->mode = $mode;
+        $this->token = $token;
+        $siteId = (int) $siteRow['id'];
+
+        if ($doc === null) {
+            $doc = $mode === 'live' ? $this->state->getPublished($siteId) : $this->state->getDraft($siteId);
+        }
+
+        $model = $this->state->resolveForRender($siteId, $doc);
+        $site = $model['site'];
+        $galleries = $model['galleries'];
+        $pages = array_values(array_filter($model['pages'], fn ($p) => $p['published']));
 
         $navGalleries = array_values(array_filter($galleries, fn ($g) => $g['show_in_nav']));
         $navPages = array_values(array_filter($pages, fn ($p) => $p['show_in_nav']));
@@ -50,7 +64,7 @@ final class PublicRenderer
             if ($gallery) {
                 $view = 'gallery';
                 $current = $gallery;
-                $images = $this->galleries->imagesFor((int) $gallery['id']);
+                $images = $gallery['images'];
                 $header = $gallery['header_config'] ?: $this->galleryHeader($gallery, $images);
             } elseif ($page) {
                 $view = 'page';
@@ -63,10 +77,10 @@ final class PublicRenderer
 
         if ($view === 'home') {
             $homeGallery = $this->homeGallery($galleries);
-            $images = $homeGallery ? $this->galleries->imagesFor((int) $homeGallery['id']) : [];
+            $images = $homeGallery ? $homeGallery['images'] : [];
         }
 
-        $model = [
+        $data = [
             'site' => $site,
             'galleries' => $galleries,
             'navGalleries' => $navGalleries,
@@ -76,15 +90,17 @@ final class PublicRenderer
             'images' => $images,
             'header' => $header,
             'headerImages' => $this->resolveHeaderImages($header, $site),
+            'mode' => $mode,
+            'editable' => $mode === 'edit',
             'renderer' => $this,
         ];
 
-        return Response::html($this->view('layout', $model));
+        return Response::html($this->view('layout', $data));
     }
 
     public function notFound(): Response
     {
-        return Response::html($this->view('not_found', []), 404);
+        return Response::html($this->view('not_found', ['mode' => $this->mode]), 404);
     }
 
     /** Include a template and capture its output. */
@@ -92,6 +108,7 @@ final class PublicRenderer
     {
         extract($data, EXTR_SKIP);
         $r = $this; // available inside templates for partials/helpers
+        $mode = $data['mode'] ?? $this->mode;
         ob_start();
         include dirname(__DIR__) . "/Views/public/$name.php";
         return (string) ob_get_clean();
@@ -168,10 +185,22 @@ final class PublicRenderer
 
     public function url(array $site, string $to = ''): string
     {
-        // Build in-site links that work under /@slug, subdomain or custom domain.
+        $to = ltrim($to, '/');
+
+        // In editor/preview the canvas navigates within the token-gated route
+        // so the mode (and the draft it renders) is preserved across links.
+        if ($this->mode === 'edit' || $this->mode === 'preview') {
+            $base = $this->mode === 'edit' ? '/api/site/editor/render' : '/api/site/preview';
+            $q = 'token=' . rawurlencode((string) $this->token);
+            if ($to !== '') {
+                $q .= '&path=' . rawurlencode($to);
+            }
+            return $base . '?' . $q;
+        }
+
+        // Live: build in-site links that work under /@slug, subdomain or custom domain.
         $isSlugMode = str_contains($_SERVER['REQUEST_URI'] ?? '', '/@');
         $prefix = $isSlugMode ? '/@' . $site['slug'] : '';
-        $to = ltrim($to, '/');
         return ($prefix ?: '') . ($to ? '/' . $to : ($prefix ? '' : '/'));
     }
 
