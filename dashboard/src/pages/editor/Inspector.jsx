@@ -285,8 +285,7 @@ function HeroPanel({ e, target }) {
   const images = (h.image_ids || []).map((iid) => ({ id: iid, img: e.imagesById[iid] }));
   const [title, setTitle] = useState(h.overlay?.title || '');
   const [subtitle, setSubtitle] = useState(h.overlay?.subtitle || '');
-  const [words, setWords] = useState((h.rotating_words || []).join(', '));
-  useEffect(() => { setTitle(h.overlay?.title || ''); setSubtitle(h.overlay?.subtitle || ''); setWords((h.rotating_words || []).join(', ')); }, [target]); // eslint-disable-line
+  useEffect(() => { setTitle(h.overlay?.title || ''); setSubtitle(h.overlay?.subtitle || ''); }, [target]); // eslint-disable-line
 
   const isSlideshow = h.mode === 'slideshow';
   return (
@@ -349,13 +348,7 @@ function HeroPanel({ e, target }) {
       <Group title="Motion & size">
         <div className="space-y-3">
           <Toggle checked={!!h.animate_text} onChange={(v) => e.ops.setHeroField(target, { animate_text: v })} label="Animated words reveal" />
-          {h.animate_text && (
-            <Field label="Rotating words" hint="Comma-separated — they rise and fade in turn.">
-              <Input value={words} onChange={(ev) => setWords(ev.target.value)}
-                onBlur={() => e.ops.setHeroField(target, { rotating_words: words.split(',').map((w) => w.trim()).filter(Boolean) })}
-                placeholder="Above the lake, Golden hour, Alpine light" />
-            </Field>
-          )}
+          {h.animate_text && <RotatingWords e={e} target={target} words={h.rotating_words || []} />}
           <Toggle checked={!!h.parallax} onChange={(v) => e.ops.setHeroStyle(target, { parallax: v })} label="Parallax scrolling" />
           <Field label="Height">
             <Segmented value={h.height || 'tall'} onChange={(v) => e.ops.setHeroStyle(target, { height: v })}
@@ -369,6 +362,29 @@ function HeroPanel({ e, target }) {
           onConfirm={(ids) => { e.ops.setHeroImages(target, ids); setPicking(false); }} />
       )}
     </div>
+  );
+}
+
+function RotatingWords({ e, target, words }) {
+  const [list, setList] = useState(() => words.map((t, i) => ({ id: `w${i}`, text: t })));
+  useEffect(() => { setList(words.map((t, i) => ({ id: `w${i}`, text: t }))); }, [target]); // eslint-disable-line
+  const commit = (next) => e.ops.setHeroField(target, { rotating_words: next.map((x) => x.text.trim()).filter(Boolean) });
+  const add = () => setList((l) => [...l, { id: `n${l.length}-${Date.now()}`, text: '' }]);
+  const remove = (id) => { const next = list.filter((x) => x.id !== id); setList(next); commit(next); };
+  const setText = (id, text) => setList((l) => l.map((x) => (x.id === id ? { ...x, text } : x)));
+
+  return (
+    <Field label="Rotating words" hint="Each phrase rises and fades in turn. Click a word on the canvas to edit it in place.">
+      <div className="space-y-1.5">
+        {list.map((row) => (
+          <div key={row.id} className="flex items-center gap-1.5">
+            <Input value={row.text} onChange={(ev) => setText(row.id, ev.target.value)} onBlur={() => commit(list)} placeholder="Add a phrase…" />
+            <button onClick={() => remove(row.id)} className="flex-none w-8 h-8 grid place-items-center rounded-md text-ink-faint hover:text-danger" aria-label="Remove phrase"><Icon name="x" size={14} /></button>
+          </div>
+        ))}
+      </div>
+      <button className="link text-[13px] mt-2" onClick={add}>+ Add word</button>
+    </Field>
   );
 }
 

@@ -194,6 +194,11 @@ export function useSiteEditor() {
         const h = ensureHeader(d, c.heroTarget, galleriesById);
         h.overlay = h.overlay || {};
         h.overlay[path.split('.')[1]] = value;
+      } else if (path.startsWith('rotating:')) {
+        const i = +path.split(':')[1];
+        const h = ensureHeader(d, c.heroTarget, galleriesById);
+        h.rotating_words = Array.isArray(h.rotating_words) ? h.rotating_words.slice() : [];
+        h.rotating_words[i] = value;
       } else if (path === 'gallery.name') {
         const g = findGallery(d, c.galleryId); if (g) g.name = value;
       } else if (path === 'gallery.description') {

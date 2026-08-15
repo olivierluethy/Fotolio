@@ -36,8 +36,8 @@ $ed = fn (string $attrs) => $editable ? $attrs : '';
         <p class="subtitle<?= $subtitle ? '' : ' is-empty' ?>" <?= $ed('data-editable="hero.subtitle" contenteditable="true" spellcheck="false" data-placeholder="Add a subtitle…"') ?>><?= $r->e($subtitle) ?></p>
       <?php endif ?>
       <?php if ($animate && $words): ?>
-        <div class="rotator" data-rotator>
-          <?php foreach ($words as $w): ?><span class="word"><?= $r->e($w) ?></span><?php endforeach ?>
+        <div class="rotator" data-rotator<?= $ed(' data-rotator-edit') ?>>
+          <?php foreach ($words as $i => $w): ?><span class="word"<?= $ed('data-editable="rotating:' . (int) $i . '" contenteditable="true" spellcheck="false"') ?>><?= $r->e($w) ?></span><?php endforeach ?>
         </div>
       <?php endif ?>
     </div>

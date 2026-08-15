@@ -89,3 +89,21 @@ body.is-editing .fotolio-pulse { animation: fotolioPulse .9s var(--ease-out); bo
 @media (prefers-reduced-motion: reduce) {
   body.is-editing .subnav a.nav-anim, body.is-editing .fotolio-pulse { transition: none; animation: none; }
 }
+
+/* Rotating words: in edit mode lay every phrase out static and visible so each
+   is directly clickable and inline-editable (theme stacks them absolutely). */
+body.is-editing .rotator[data-rotator-edit] {
+  position: static; height: auto; display: flex; flex-wrap: wrap; gap: .15em .55em;
+}
+body.is-editing .rotator[data-rotator-edit] .word {
+  position: static !important; opacity: 1 !important; transform: none !important;
+  animation: none !important; left: auto; right: auto;
+  border-radius: 6px; padding: 0 .18em; cursor: text; outline: none;
+}
+body.is-editing .rotator[data-rotator-edit] .word:hover {
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent-bright) 35%, transparent);
+}
+body.is-editing .rotator[data-rotator-edit] .word:focus {
+  box-shadow: 0 0 0 1.5px var(--accent-bright);
+  background: color-mix(in srgb, var(--accent-bright) 12%, transparent);
+}
