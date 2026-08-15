@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/ui/Icon';
 import { Button, Spinner } from '../components/ui/Button';
 import { humanBytes, pct } from '../lib/format';
-import Analytics from '../components/Analytics';
 
 export default function Overview() {
   const { user, site } = useAuth();
@@ -60,9 +59,6 @@ export default function Overview() {
         </div>
         <Button as="a" href={site?.public_url} target="_blank" variant="secondary" icon="eye">View site</Button>
       </div>
-
-      {/* Visitor analytics */}
-      <Analytics />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

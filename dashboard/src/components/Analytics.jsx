@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Icon } from './ui/Icon';
 import { Spinner } from './ui/Button';
+import VisitorGlobe from './VisitorGlobe';
 
 /**
  * First-party site analytics for the Overview: aggregate stats, a pageview
@@ -15,7 +16,7 @@ const RANGES = [
   { days: 30, label: '30d' },
 ];
 
-export default function Analytics() {
+export default function Analytics({ showGlobe = false, heading = true }) {
   const [days, setDays] = useState(14);
   const [ov, setOv] = useState(null);
   const [rt, setRt] = useState(null);
@@ -56,7 +57,7 @@ export default function Analytics() {
     <section className="mb-8">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="font-display font-semibold text-lg text-ink">Site analytics</h2>
+          {heading && <h2 className="font-display font-semibold text-lg text-ink">Site analytics</h2>}
           <LivePill active={active} window={rt?.window_seconds} />
         </div>
         <div className="inline-flex rounded-lg border border-[var(--border)] overflow-hidden text-sm">
@@ -87,6 +88,8 @@ export default function Analytics() {
               </div>
             ))}
           </div>
+
+          {showGlobe && <div className="mb-4"><VisitorGlobe countries={ov.countries} /></div>}
 
           {empty ? (
             <div className="card p-8 text-center">

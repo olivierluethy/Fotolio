@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { Spinner } from './components/ui/Button';
@@ -10,6 +11,9 @@ import Upload from './pages/Upload';
 import Library from './pages/Library';
 import SiteEditor from './pages/SiteEditor';
 import Settings from './pages/Settings';
+
+// Lazy: pulls in three.js/globe.gl only when the Analytics tab is opened.
+const AnalyticsPage = lazy(() => import('./pages/Analytics'));
 
 function FullPageLoader() {
   return (
@@ -48,6 +52,11 @@ export default function App() {
         }
       >
         <Route index element={<Overview />} />
+        <Route path="analytics" element={
+          <Suspense fallback={<div className="grid place-items-center py-24 text-accent"><Spinner size={26} /></div>}>
+            <AnalyticsPage />
+          </Suspense>
+        } />
         <Route path="upload" element={<Upload />} />
         <Route path="library" element={<Library />} />
         <Route path="editor" element={<SiteEditor />} />

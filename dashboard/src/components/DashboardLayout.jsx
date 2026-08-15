@@ -8,6 +8,7 @@ import { classNames } from '../lib/format';
 
 const NAV = [
   { to: '/app', end: true, icon: 'gauge', label: 'Overview' },
+  { to: '/app/analytics', icon: 'activity', label: 'Analytics' },
   { to: '/app/upload', icon: 'upload', label: 'Upload' },
   { to: '/app/library', icon: 'image', label: 'Library' },
   { to: '/app/editor', icon: 'layout', label: 'Site editor' },
