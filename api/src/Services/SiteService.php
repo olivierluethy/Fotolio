@@ -64,7 +64,11 @@ final class SiteService
     {
         $site = $this->forUser($userId);
         $fields = [];
-        foreach (['title', 'tagline', 'theme', 'accent'] as $key) {
+        // title is NOT NULL — only overwrite with a real value.
+        if (array_key_exists('title', $data) && is_string($data['title']) && trim($data['title']) !== '') {
+            $fields['title'] = trim($data['title']);
+        }
+        foreach (['tagline', 'theme', 'accent'] as $key) {
             if (array_key_exists($key, $data)) {
                 $fields[$key] = $data[$key];
             }
@@ -75,7 +79,7 @@ final class SiteService
         if (array_key_exists('settings', $data)) {
             $fields['settings'] = json_encode($data['settings']);
         }
-        if (array_key_exists('slug', $data) && $data['slug'] !== $site['slug']) {
+        if (array_key_exists('slug', $data) && is_string($data['slug']) && $data['slug'] !== '' && $data['slug'] !== $site['slug']) {
             $fields['slug'] = $this->uniqueSlug($data['slug'], $site['id']);
         }
         if ($fields) {
