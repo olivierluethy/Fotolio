@@ -48,8 +48,23 @@ visitor's page.
 `overview` returns visitors, pageviews, views/visitor, top pages, referrers,
 countries, devices, browsers, and a dense per-day pageview trend. `realtime`
 returns the active-session count (last 5 min, configurable), the 20 most recent
-sessions with their current page, and the 30 most recent events. The Overview
+sessions with their current page, and the 30 most recent events. The Analytics
 panel polls `realtime` every 5 seconds.
+
+## Dashboard — the Analytics tab
+
+Analytics live on their own **Analytics** sidebar tab (`/app/analytics`), not on
+Overview. The page renders `components/Analytics.jsx` (stats, trend, top pages,
+referrers, countries, devices, browsers, live feed) plus an interactive **world
+globe** (`components/VisitorGlobe.jsx`).
+
+The globe uses **react-globe.gl** (the React binding for `globe.gl`, built on
+three.js — the most widely used globe library). Each located visitor country is
+a point sized by visitor count, with a pulsing ring; it auto-rotates and can be
+dragged to spin. Country codes are mapped to marker coordinates via a bundled
+centroid table (`lib/countryCentroids.js`) so the globe works **fully offline**;
+an Earth texture loads from a CDN on top when reachable, and there is a graceful
+empty state. The page is lazy-loaded so three.js stays out of the main bundle.
 
 ## GeoIP — self-hosted country lookup
 
