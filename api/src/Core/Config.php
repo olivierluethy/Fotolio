@@ -59,6 +59,21 @@ final class Config
             // "Unknown" fallback. See docs/ANALYTICS.md.
             'analytics.geolite_path' => env('GEOLITE2_DB', 'storage/GeoLite2-Country.mmdb'),
             'analytics.active_window' => (int) env('ANALYTICS_ACTIVE_WINDOW', 300),
+
+            // Demo geolocation: loopback/private IPs (and any visit outside a
+            // production environment) can't be resolved to a real place, so the
+            // globe would sit empty on localhost. When enabled we plot those
+            // visits at a configurable demo coordinate (the owner's region) so
+            // the globe is demonstrably live locally; real public IPs in
+            // production still resolve normally. See docs/ANALYTICS.md.
+            'analytics.demo_geo' => filter_var(
+                env('ANALYTICS_DEMO_GEO', env('APP_ENV', 'local') !== 'production'),
+                FILTER_VALIDATE_BOOLEAN
+            ),
+            'analytics.demo_lat' => (float) env('ANALYTICS_DEMO_LAT', 47.0502),
+            'analytics.demo_lng' => (float) env('ANALYTICS_DEMO_LNG', 8.3093),
+            'analytics.demo_country' => (string) env('ANALYTICS_DEMO_COUNTRY', 'Switzerland'),
+            'analytics.demo_country_code' => (string) env('ANALYTICS_DEMO_CC', 'CH'),
         ];
         self::$booted = true;
     }
