@@ -67,7 +67,7 @@ export function Segmented({ value, onChange, options }) {
 
 export function Select({ className = '', children, ...props }) {
   return (
-    <select className={classNames('input pr-8 appearance-none cursor-pointer', className)} {...props}>
+    <select className={classNames('input cursor-pointer', className)} {...props}>
       {children}
     </select>
   );
