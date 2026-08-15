@@ -30,7 +30,7 @@ $ed = fn (string $attrs) => $editable ? $attrs : '';
   </div>
 
   <div class="hero-inner pos-<?= $r->e($pos) ?>">
-    <div class="hero-content align-<?= $r->e($align) ?>">
+    <div class="hero-content align-<?= $r->e($align) ?><?= !empty($overlay['panel']) ? ' has-panel' : '' ?>">
       <h1 <?= $ed('data-editable="hero.title" contenteditable="true" spellcheck="false"') ?>><?= $r->e($title) ?></h1>
       <?php if ($subtitle || $editable): ?>
         <p class="subtitle<?= $subtitle ? '' : ' is-empty' ?>" <?= $ed('data-editable="hero.subtitle" contenteditable="true" spellcheck="false" data-placeholder="Add a subtitle…"') ?>><?= $r->e($subtitle) ?></p>

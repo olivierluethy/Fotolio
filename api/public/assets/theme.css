@@ -135,6 +135,13 @@ img, picture { display: block; max-width: 100%; }
 .hero-content { max-width: 1280px; margin: 0 auto; width: 100%; }
 .hero-content.align-center { text-align: center; }
 .hero-content.align-right { text-align: right; }
+/* Optional legibility backdrop behind the overlay text. */
+.hero-content.has-panel {
+  max-width: min(760px, 92%); padding: 28px 32px; border-radius: 16px;
+  background: rgba(10,12,15,.42); backdrop-filter: blur(6px);
+}
+.hero-content.align-center.has-panel { margin-left: auto; margin-right: auto; }
+.hero-content.align-right.has-panel { margin-left: auto; margin-right: 0; }
 .hero h1 {
   font-family: var(--font-display); font-weight: 800; letter-spacing: -.5px; line-height: 1.05;
   font-size: clamp(2.2rem, 6vw, 3.6rem); text-shadow: 0 2px 30px rgba(0,0,0,.35);

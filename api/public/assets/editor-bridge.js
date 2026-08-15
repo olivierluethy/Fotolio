@@ -125,6 +125,7 @@
     if (inner && d.position) { inner.classList.remove('pos-top', 'pos-center', 'pos-bottom'); inner.classList.add('pos-' + d.position); }
     var content = hero.querySelector('.hero-content');
     if (content && d.align) { content.classList.remove('align-left', 'align-center', 'align-right'); content.classList.add('align-' + d.align); }
+    if (content && d.panel !== undefined) { content.classList.toggle('has-panel', !!d.panel); }
     if (d.parallax !== undefined) {
       if (d.parallax) { hero.setAttribute('data-parallax', ''); }
       else { hero.removeAttribute('data-parallax'); hero.querySelectorAll('.hero-slide').forEach(function (s) { s.style.transform = ''; }); }
