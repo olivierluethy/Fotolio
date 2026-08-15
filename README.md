@@ -43,7 +43,9 @@ composer install
 cp .env.example .env                       # dev defaults are ready to go
 php -r 'echo "JWT_SECRET=".bin2hex(random_bytes(32));' >> .env   # or edit .env
 php bin/console setup                       # migrate + seed demo data
-php -S 127.0.0.1:8000 -t public public/index.php   # API + public sites → :8000
+composer serve                              # API + public sites → :8000 (with upload limits set)
+# ^ equivalent to: php -d upload_max_filesize=64M -d post_max_size=80M \
+#     -S 127.0.0.1:8000 -t public public/index.php
 
 # 2) Dashboard (new terminal)
 cd dashboard

@@ -28,11 +28,26 @@ final class UploadController extends Controller
     public function upload(Request $request): Response
     {
         [$userId, $siteId, $quality] = $this->context($request);
-        $files = $this->uploads->normaliseFiles($request->files);
-        if (!$files) {
+
+        // A POST larger than post_max_size arrives with empty $_POST/$_FILES.
+        $contentLength = (int) ($request->server['CONTENT_LENGTH'] ?? 0);
+        if (!$request->files && $contentLength > 0) {
+            throw HttpException::unprocessable(
+                'The upload was too large for the server to accept. Try fewer or smaller files, '
+                . 'or ask your host to raise post_max_size.'
+            );
+        }
+
+        ['ok' => $files, 'rejected' => $rejected] = $this->uploads->normaliseFiles($request->files);
+        if (!$files && !$rejected) {
             throw HttpException::unprocessable('No files were received. Choose at least one image.');
         }
-        return Response::json($this->uploads->ingestMany($userId, $siteId, $files, $quality), 201);
+        $result = $this->uploads->ingestMany($userId, $siteId, $files, $quality);
+        // Fold PHP-level rejections into the review's failed list.
+        foreach ($rejected as $r) {
+            $result['failed'][] = ['filename' => $r['filename'], 'message' => '“' . $r['filename'] . '” ' . $r['message']];
+        }
+        return Response::json($result, 201);
     }
 
     public function fromUrl(Request $request): Response

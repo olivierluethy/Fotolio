@@ -37,23 +37,47 @@ final class UploadService
         ];
     }
 
-    /** Normalise PHP's awkward $_FILES structure into a flat list. */
+    /**
+     * Normalise PHP's awkward $_FILES structure into a flat list, capturing any
+     * files PHP rejected (e.g. over upload_max_filesize) so they surface in the
+     * review instead of silently vanishing.
+     *
+     * @return array{ok:array<array{tmp:string,name:string}>,rejected:array<array{filename:string,message:string}>}
+     */
     public function normaliseFiles(array $files): array
     {
-        $flat = [];
+        $ok = [];
+        $rejected = [];
+        $consider = function (string $name, int $err, ?string $tmp) use (&$ok, &$rejected) {
+            if ($err === UPLOAD_ERR_OK) {
+                $ok[] = ['tmp' => $tmp, 'name' => basename($name)];
+            } elseif ($err !== UPLOAD_ERR_NO_FILE) {
+                $rejected[] = ['filename' => basename($name) ?: 'file', 'message' => $this->uploadErrorMessage($err)];
+            }
+        };
         foreach ($files as $field) {
             if (is_array($field['name'])) {
                 foreach ($field['name'] as $i => $name) {
-                    if (($field['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-                        continue;
-                    }
-                    $flat[] = ['tmp' => $field['tmp_name'][$i], 'name' => basename($name)];
+                    $consider((string) $name, (int) ($field['error'][$i] ?? UPLOAD_ERR_NO_FILE), $field['tmp_name'][$i] ?? null);
                 }
-            } elseif (($field['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-                $flat[] = ['tmp' => $field['tmp_name'], 'name' => basename($field['name'])];
+            } else {
+                $consider((string) $field['name'], (int) ($field['error'] ?? UPLOAD_ERR_NO_FILE), $field['tmp_name'] ?? null);
             }
         }
-        return $flat;
+        return ['ok' => $ok, 'rejected' => $rejected];
+    }
+
+    private function uploadErrorMessage(int $err): string
+    {
+        return match ($err) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
+                'is larger than this server accepts. Ask your host to raise upload_max_filesize / post_max_size.',
+            UPLOAD_ERR_PARTIAL => 'was only partially uploaded — please try again.',
+            UPLOAD_ERR_NO_TMP_DIR => 'could not be saved (the server has no temp folder).',
+            UPLOAD_ERR_CANT_WRITE => 'could not be written on the server.',
+            UPLOAD_ERR_EXTENSION => 'was blocked by a server setting.',
+            default => 'could not be uploaded.',
+        };
     }
 
     public function fromUrl(int $userId, int $siteId, string $url, int $quality): array

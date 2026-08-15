@@ -24,6 +24,11 @@ fotolio.app          → dashboard SPA (landing lives in the SPA at /)
   `mbstring`, `fileinfo`, `openssl`.
   - **GD** covers JPEG/PNG/WebP/GIF/BMP. Install **Imagick** to additionally accept **HEIC/HEIF**
     and **TIFF** — set nothing else; `ImageOptimizationService` prefers Imagick when present.
+- **PHP upload limits** must accommodate photos: set `upload_max_filesize`, `post_max_size`
+  (≥ the app's `UPLOAD_MAX_MB`, e.g. 64M/80M), `max_file_uploads` (≥100 for folder/ZIP batches),
+  and a generous `memory_limit` (512M) in `php.ini` / the FPM pool. Files over these limits are
+  rejected by PHP before the app sees them — Fotolio now reports them in the upload review, but they
+  still won't be processed.
 - **MySQL 8 / MariaDB 10.4+**
 - **Composer 2**, **Node 18+** (build only)
 - Nginx (or Apache) + PHP-FPM

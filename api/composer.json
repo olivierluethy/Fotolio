@@ -28,6 +28,6 @@
     "scripts": {
         "migrate": "php bin/console migrate",
         "seed": "php bin/console seed",
-        "serve": "php -S 0.0.0.0:8000 -t public"
+        "serve": "php -d upload_max_filesize=64M -d post_max_size=80M -d memory_limit=512M -d max_file_uploads=100 -S 127.0.0.1:8000 -t public public/index.php"
     }
 }
