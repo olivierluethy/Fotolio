@@ -53,6 +53,17 @@
     if (!multi) { e.preventDefault(); el.blur(); }
   });
 
+  // Undo/redo while focus is inside the canvas. Leave native undo alone while
+  // the caret is in an editable field so typing corrections still work there.
+  document.addEventListener('keydown', function (e) {
+    if (!(e.metaKey || e.ctrlKey) || (e.key !== 'z' && e.key !== 'Z' && e.key !== 'y' && e.key !== 'Y')) return;
+    var inText = e.target && e.target.closest && e.target.closest('[data-editable]');
+    if (inText) return;
+    e.preventDefault();
+    var redo = (e.key === 'y' || e.key === 'Y') || e.shiftKey;
+    post('shortcut', { action: redo ? 'redo' : 'undo' });
+  });
+
   /* ---- Clicks: navigation, region select, block remove, hero hint --------- */
   document.addEventListener('click', function (e) {
     var t = e.target;

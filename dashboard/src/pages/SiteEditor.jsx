@@ -54,6 +54,16 @@ function TopBar({ e }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center rounded-md border overflow-hidden">
+          <button className="h-8 px-2 grid place-items-center text-ink-muted hover:text-ink hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent"
+            title="Undo (⌘Z)" aria-label="Undo" disabled={!e.canUndo} onClick={e.undo}>
+            <Icon name="undo" size={16} />
+          </button>
+          <button className="h-8 px-2 grid place-items-center text-ink-muted hover:text-ink hover:bg-surface-2 border-l disabled:opacity-40 disabled:hover:bg-transparent"
+            title="Redo (⇧⌘Z)" aria-label="Redo" disabled={!e.canRedo} onClick={e.redo}>
+            <Icon name="redo" size={16} />
+          </button>
+        </div>
         <SaveState state={e.saving} />
         {e.dirty && (
           <button className="btn btn-ghost btn-sm !text-ink-muted" disabled={busy === 'discard'}

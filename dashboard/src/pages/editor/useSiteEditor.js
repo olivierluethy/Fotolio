@@ -39,6 +39,18 @@ export function useSiteEditor() {
   const pending = useRef(false);
   const savePromise = useRef(Promise.resolve());
 
+  // Undo/redo: snapshots of the whole draft. Rapid edits (typing) coalesce so
+  // one burst is a single undo step. Structural ops each get their own step.
+  const histRef = useRef([]);
+  const futureRef = useRef([]);
+  const lastPushRef = useRef(0);
+  const [histLen, setHistLen] = useState(0);
+  const [futLen, setFutLen] = useState(0);
+  const syncHist = useCallback(() => {
+    setHistLen(histRef.current.length);
+    setFutLen(futureRef.current.length);
+  }, []);
+
   const galleriesById = useMemo(() => Object.fromEntries(galleries.map((g) => [g.id, g])), [galleries]);
   const pagesById = useMemo(() => Object.fromEntries(pages.map((p) => [p.id, p])), [pages]);
   const imagesById = useMemo(() => Object.fromEntries(images.map((i) => [i.id, i])), [images]);
@@ -110,13 +122,28 @@ export function useSiteEditor() {
   }, [runSave]);
   const flushSave = useCallback(() => runSave(), [runSave]);
 
-  const mutate = useCallback((fn) => {
+  const recordHistory = useCallback((prev, group) => {
+    const now = Date.now();
+    // Coalesce a burst of grouped edits (typing) into the pre-burst snapshot.
+    if (group && now - lastPushRef.current < 600 && histRef.current.length) {
+      lastPushRef.current = now;
+      return;
+    }
+    histRef.current.push(prev);
+    if (histRef.current.length > 80) histRef.current.shift();
+    futureRef.current = [];
+    lastPushRef.current = now;
+    syncHist();
+  }, [syncHist]);
+
+  const mutate = useCallback((fn, { group = false } = {}) => {
+    recordHistory(draftRef.current, group);
     const next = clone(draftRef.current);
     fn(next);
     draftRef.current = next;
     setDraftState(next);
     scheduleSave();
-  }, [scheduleSave]);
+  }, [scheduleSave, recordHistory]);
 
   // ---- Canvas navigation ------------------------------------------------
   const navigateCanvas = useCallback(async (path, { select } = {}) => {
@@ -137,10 +164,32 @@ export function useSiteEditor() {
     postToCanvas('reload', { fragment });
   }, [flushSave, postToCanvas]);
 
+  const applyHistory = useCallback((doc) => {
+    draftRef.current = doc;
+    setDraftState(doc);
+    lastPushRef.current = 0; // don't coalesce across an undo boundary
+    scheduleSave();
+    syncHist();
+    reloadFull();
+  }, [scheduleSave, syncHist, reloadFull]);
+
+  const undo = useCallback(() => {
+    if (!histRef.current.length) return;
+    futureRef.current.push(draftRef.current);
+    applyHistory(histRef.current.pop());
+  }, [applyHistory]);
+
+  const redo = useCallback(() => {
+    if (!futureRef.current.length) return;
+    histRef.current.push(draftRef.current);
+    applyHistory(futureRef.current.pop());
+  }, [applyHistory]);
+
   // ---- Inbound bridge messages -----------------------------------------
   const applyCanvasEdit = useCallback((path, value) => {
     const c = ctxRef.current;
     mutate((d) => {
+      /* grouped: a burst of keystrokes collapses to one undo step */
       if (path === 'hero.title' || path === 'hero.subtitle') {
         const h = ensureHeader(d, c.heroTarget, galleriesById);
         h.overlay = h.overlay || {};
@@ -156,7 +205,7 @@ export function useSiteEditor() {
         const p = findPage(d, c.pageId);
         if (p && p.content[+idxS]) p.content[+idxS][field === 'caption' ? 'caption' : 'text'] = value;
       }
-    });
+    }, { group: true });
     if (path === 'gallery.name') postNav();
   }, [mutate, galleriesById, postNav]);
 
@@ -195,12 +244,27 @@ export function useSiteEditor() {
         case 'select': onCanvasSelect(d); break;
         case 'navigate': navigateCanvas(d.path); break;
         case 'block-remove': removeBlockFromCanvas(d.index); break;
+        case 'shortcut': d.action === 'redo' ? redo() : undo(); break;
         default: break;
       }
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [applyCanvasEdit, onCanvasSelect, navigateCanvas, removeBlockFromCanvas, onReady]);
+  }, [applyCanvasEdit, onCanvasSelect, navigateCanvas, removeBlockFromCanvas, onReady, undo, redo]);
+
+  // Undo/redo keyboard shortcuts while focus is in the dashboard chrome. When
+  // focus is inside the canvas iframe, editor-bridge.js forwards the same keys.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
+      const el = document.activeElement;
+      if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+      e.shiftKey ? redo() : undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo, redo]);
 
   // ---- Operations exposed to panels ------------------------------------
   const ops = useMemo(() => ({
@@ -221,12 +285,12 @@ export function useSiteEditor() {
       postNav();
     },
     renameGallery(galleryId, name) {
-      mutate((d) => { const g = findGallery(d, galleryId); if (g) g.name = name; });
+      mutate((d) => { const g = findGallery(d, galleryId); if (g) g.name = name; }, { group: true });
       postToCanvas('set-text', { path: 'gallery.name', value: name });
       postNav();
     },
     setGalleryDescription(galleryId, description) {
-      mutate((d) => { const g = findGallery(d, galleryId); if (g) g.description = description; });
+      mutate((d) => { const g = findGallery(d, galleryId); if (g) g.description = description; }, { group: true });
       postToCanvas('set-text', { path: 'gallery.description', value: description });
     },
 
@@ -267,7 +331,7 @@ export function useSiteEditor() {
       reloadFull();
     },
     setHeroText(target, field, value) {
-      mutate((d) => { const h = ensureHeader(d, target, galleriesById); h.overlay = h.overlay || {}; h.overlay[field] = value; });
+      mutate((d) => { const h = ensureHeader(d, target, galleriesById); h.overlay = h.overlay || {}; h.overlay[field] = value; }, { group: true });
       postToCanvas('set-text', { path: `hero.${field}`, value });
     },
 
@@ -289,7 +353,7 @@ export function useSiteEditor() {
       reloadFragment('main');
     },
     renamePage(pageId, title) {
-      mutate((d) => { const p = findPage(d, pageId); if (p) p.title = title; });
+      mutate((d) => { const p = findPage(d, pageId); if (p) p.title = title; }, { group: true });
       postToCanvas('set-text', { path: 'page.title', value: title });
     },
     setPageFlag(pageId, patch) {
@@ -372,6 +436,7 @@ export function useSiteEditor() {
     canvasRef, canvasSrc, navigateCanvas, reloadFull, buildHref,
     ops, createGallery, deleteGallery, createPage, deletePage,
     publish, discard, openPreview,
+    undo, redo, canUndo: histLen > 0, canRedo: futLen > 0,
   };
 }
 

@@ -44,6 +44,8 @@ const P = {
   tablet: <><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M11 18h2" /></>,
   mapPin: <><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></>,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  undo: <><path d="M9 14L4 9l5-5" /><path d="M4 9h11a6 6 0 010 12h-4" /></>,
+  redo: <><path d="M15 14l5-5-5-5" /><path d="M20 9H9a6 6 0 000 12h4" /></>,
 };
 
 export function Icon({ name, size = 20, className = '', strokeWidth = 1.8 }) {
