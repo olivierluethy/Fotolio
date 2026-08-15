@@ -104,6 +104,17 @@ final class ImageService
         return $this->present($this->row($imageId));
     }
 
+    /** @return array{path:string,mime:string,filename:string} */
+    public function originalFile(int $imageId): array
+    {
+        $row = $this->row($imageId);
+        $path = storage_path($row['original_path']);
+        if (!is_file($path)) {
+            throw HttpException::notFound('Original file not available.');
+        }
+        return ['path' => $path, 'mime' => $row['mime'] ?: 'application/octet-stream', 'filename' => $row['original_filename']];
+    }
+
     public function list(int $siteId, array $filters = []): array
     {
         $sql = 'SELECT * FROM images WHERE site_id = :s';
@@ -180,12 +191,25 @@ final class ImageService
         return $count;
     }
 
+    /** Short signature gating access to a private original (owner dashboard only). */
+    public static function signOriginal(int $imageId): string
+    {
+        return substr(hash_hmac('sha256', 'orig:' . $imageId, (string) config('jwt.secret')), 0, 24);
+    }
+
+    public static function verifyOriginalSig(int $imageId, string $sig): bool
+    {
+        return hash_equals(self::signOriginal($imageId), $sig);
+    }
+
     public function present(array $row): array
     {
         $variants = $row['variants'] ? json_decode($row['variants'], true) : [];
         $metrics = $this->optimizer->metrics((int) $row['original_bytes'], (int) $row['optimised_bytes']);
+        $id = (int) $row['id'];
         return [
-            'id' => (int) $row['id'],
+            'id' => $id,
+            'original_url' => '/api/images/' . $id . '/original?sig=' . self::signOriginal($id),
             'title' => $row['title'],
             'location' => $row['location'],
             'description' => $row['description'],

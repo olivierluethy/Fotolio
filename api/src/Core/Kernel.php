@@ -88,6 +88,9 @@ final class Kernel
         // ---- Health -------------------------------------------------------
         $r->get('/api/health', fn () => Response::json(['status' => 'ok', 'app' => config('app.name')]));
 
+        // Signature-gated original stream (image tag src can't send bearer headers).
+        $r->get('/api/images/{id}/original', [ImageController::class, 'original']);
+
         $r->group($auth, function (Router $r) {
             // ---- Site + publishing ---------------------------------------
             $r->get('/api/site', [SiteController::class, 'show']);

@@ -65,6 +65,23 @@ final class ImageController extends Controller
         return Response::json(['image' => $image, 'message' => 'Re-optimised at quality ' . $image['quality'] . '.']);
     }
 
+    /** Signature-gated stream of a private original for the before/after loupe. */
+    public function original(Request $request, array $params): Response
+    {
+        $id = (int) $params['id'];
+        $sig = (string) $request->query('sig', '');
+        if (!\Fotolio\Services\ImageService::verifyOriginalSig($id, $sig)) {
+            throw \Fotolio\Core\HttpException::forbidden('Invalid signature.');
+        }
+        $file = $this->images->originalFile($id);
+        // Stream directly; this is the owner's own private original.
+        header('Content-Type: ' . $file['mime']);
+        header('Content-Length: ' . filesize($file['path']));
+        header('Cache-Control: private, max-age=3600');
+        readfile($file['path']);
+        exit;
+    }
+
     public function bulk(Request $request): Response
     {
         $ids = (array) $request->input('ids', []);
