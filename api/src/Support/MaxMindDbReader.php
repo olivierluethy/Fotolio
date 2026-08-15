@@ -115,7 +115,9 @@ final class MaxMindDbReader
             9, 10 => [$this->bytesToInt($offset, $size), $offset + $size],     // uint64/128 (best effort)
             11 => $this->decodeArray($size, $offset),                         // array
             14 => [$size !== 0, $offset],                                     // boolean
-            4, 15, 3 => [null, $offset + $size],                             // bytes/float/double — skipped
+            15 => [$this->decodeDouble($offset, $size), $offset + $size],      // double (lat/lng in City DBs)
+            3  => [$this->decodeFloat($offset, $size), $offset + $size],       // float
+            4  => [null, $offset + $size],                                    // bytes — skipped
             default => [null, $offset + $size],
         };
     }
@@ -166,6 +168,26 @@ final class MaxMindDbReader
             $arr[] = $val;
         }
         return [$arr, $offset];
+    }
+
+    /** IEEE-754 64-bit big-endian double (City DB latitude/longitude). */
+    private function decodeDouble(int $offset, int $size): ?float
+    {
+        if ($size !== 8) {
+            return null;
+        }
+        $v = @unpack('E', substr($this->buf, $offset, 8)); // 'E' = big-endian double
+        return $v ? (float) $v[1] : null;
+    }
+
+    /** IEEE-754 32-bit big-endian float. */
+    private function decodeFloat(int $offset, int $size): ?float
+    {
+        if ($size !== 4) {
+            return null;
+        }
+        $v = @unpack('G', substr($this->buf, $offset, 4)); // 'G' = big-endian float
+        return $v ? (float) $v[1] : null;
     }
 
     private function sizeFromCtrl(int $ctrl, int $offset): array
