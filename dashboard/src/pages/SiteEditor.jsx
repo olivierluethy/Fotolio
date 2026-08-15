@@ -13,7 +13,9 @@ export default function SiteEditor() {
   }
 
   return (
-    <div className="-mx-4 lg:-mx-8 -my-6 lg:-my-8 h-[calc(100vh-4rem)] flex flex-col bg-bg">
+    // Break out of the padded, max-width dashboard main so the canvas gets the
+    // full area beside the sidebar — the editing surface is the whole point.
+    <div className="fixed inset-0 top-16 lg:left-60 z-10 flex flex-col bg-bg">
       <TopBar e={e} />
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[360px_1fr]">
         <aside className="border-r bg-surface flex flex-col min-h-0">
