@@ -2,6 +2,7 @@
 
 namespace Fotolio\Core;
 
+use Fotolio\Controllers\AnalyticsController;
 use Fotolio\Controllers\AuthController;
 use Fotolio\Controllers\DomainController;
 use Fotolio\Controllers\GalleryController;
@@ -97,11 +98,19 @@ final class Kernel
         $r->get('/api/site/editor/render', [SiteEditorController::class, 'render']);
         $r->get('/api/site/preview', [SiteEditorController::class, 'preview']);
 
+        // Public analytics beacon — called by the tracking script on every
+        // published page. No auth: the site is identified in the payload.
+        $r->post('/api/analytics/collect', [AnalyticsController::class, 'collect']);
+
         $r->group($auth, function (Router $r) {
             // ---- Site + publishing ---------------------------------------
             $r->get('/api/site', [SiteController::class, 'show']);
             $r->patch('/api/site', [SiteController::class, 'update']);
             $r->post('/api/site/publish', [SiteController::class, 'publish']);
+
+            // ---- Analytics (Overview dashboard) --------------------------
+            $r->get('/api/analytics/overview', [AnalyticsController::class, 'overview']);
+            $r->get('/api/analytics/realtime', [AnalyticsController::class, 'realtime']);
 
             // ---- Live Site Editor: draft / publish / discard / preview ----
             $r->get('/api/site/editor', [SiteEditorController::class, 'show']);

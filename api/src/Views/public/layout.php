@@ -112,6 +112,9 @@ $subviewData = compact('site', 'navGalleries', 'navPages', 'view', 'current', 'i
 <?php if ($editable): ?>
 <script>window.__FOTOLIO_EDIT__ = <?= json_encode($editCtx, JSON_UNESCAPED_SLASHES) ?>;</script>
 <script src="/assets/editor-bridge.js" defer></script>
+<?php elseif ($mode === 'live'): ?>
+<script>window.__FOTOLIO_SITE__ = <?= json_encode(['id' => (int) $site['id']], JSON_UNESCAPED_SLASHES) ?>;</script>
+<script src="/assets/analytics.js" defer></script>
 <?php endif ?>
 </body>
 </html>
