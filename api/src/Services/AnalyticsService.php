@@ -48,7 +48,7 @@ final class AnalyticsService
             );
 
             if ($existing === null) {
-                $geo = $this->geo->lookup($ip);
+                $geo = $this->locate($sid, $ip);
                 $agent = UserAgentParser::parse($ua);
                 Database::insert('analytics_sessions', [
                     'site_id' => $siteId,
@@ -57,6 +57,8 @@ final class AnalyticsService
                     'ip' => substr($ip, 0, 45),
                     'country' => $geo['country'],
                     'country_code' => $geo['country_code'],
+                    'lat' => $geo['lat'],
+                    'lng' => $geo['lng'],
                     'device' => $agent['device'],
                     'browser' => $agent['browser'],
                     'os' => $agent['os'],
@@ -163,13 +165,115 @@ final class AnalyticsService
             ['s' => $siteId]
         );
 
+        $located = $this->located($siteId, $threshold);
+
         return [
             'active' => $active,
             'window_seconds' => $window,
             'sessions' => $sessions,
             'recent_events' => $events,
+            'located' => $located['points'],
+            'located_countries' => $located['countries'],
             'geoip' => $this->geo->available(),
+            'geoip_demo' => $this->geo->demoActive(),
         ];
+    }
+
+    /**
+     * Every session that resolved to a coordinate, for the globe. Each point
+     * carries whether the visitor is currently active (last_seen within the
+     * window) so the globe can highlight live viewers distinctly. Capped.
+     *
+     * @return array{points:list<array<string,mixed>>,countries:int}
+     */
+    private function located(int $siteId, string $threshold): array
+    {
+        $rows = Database::all(
+            'SELECT lat, lng, country, country_code, session_id, last_seen,
+                    CASE WHEN last_seen >= :t THEN 1 ELSE 0 END AS active
+               FROM analytics_sessions
+              WHERE site_id = :s AND lat IS NOT NULL AND lng IS NOT NULL
+              ORDER BY last_seen DESC
+              LIMIT 500',
+            ['s' => $siteId, 't' => $threshold]
+        );
+        $codes = [];
+        $points = [];
+        foreach ($rows as $r) {
+            $cc = $r['country_code'] ?? null;
+            if ($cc) {
+                $codes[$cc] = true;
+            }
+            $points[] = [
+                'lat' => (float) $r['lat'],
+                'lng' => (float) $r['lng'],
+                'country' => $r['country'],
+                'country_code' => $cc,
+                'active' => (int) $r['active'] === 1,
+                'last_seen' => $r['last_seen'],
+            ];
+        }
+        return ['points' => $points, 'countries' => count($codes)];
+    }
+
+    /**
+     * Resolve a visitor's location and apply a small deterministic jitter to
+     * demo coordinates so many localhost sessions fan out around the demo city
+     * instead of stacking on one pixel. Real, resolved coordinates are untouched.
+     *
+     * @return array{country:string,country_code:?string,lat:?float,lng:?float}
+     */
+    private function locate(string $sid, ?string $ip): array
+    {
+        $geo = $this->geo->lookup($ip);
+        if (!empty($geo['demo']) && $geo['lat'] !== null && $geo['lng'] !== null) {
+            $geo['lat'] = round($geo['lat'] + $this->jitter($sid, 'a', 0.6), 5);
+            $geo['lng'] = round($geo['lng'] + $this->jitter($sid, 'o', 0.9), 5);
+        }
+        return $geo;
+    }
+
+    /** Deterministic ±amplitude offset from a seed, stable per session. */
+    private function jitter(string $seed, string $axis, float $amplitude): float
+    {
+        $h = crc32($seed . ':' . $axis);
+        return ((($h % 1000) / 1000) - 0.5) * 2 * $amplitude;
+    }
+
+    /**
+     * Backfill lat/lng for sessions that don't have coordinates yet (called by
+     * migration 010 and safe to re-run). Returns the number updated.
+     */
+    public function backfillCoordinates(): int
+    {
+        $rows = Database::all(
+            "SELECT id, session_id, ip, country, country_code
+               FROM analytics_sessions
+              WHERE lat IS NULL OR lng IS NULL
+                 OR country_code IS NULL OR country_code = ''
+                 OR country IN ('Local', 'Unknown')"
+        );
+        $n = 0;
+        foreach ($rows as $row) {
+            $geo = $this->locate((string) $row['session_id'], $row['ip'] ?? null);
+            if ($geo['lat'] === null || $geo['lng'] === null) {
+                continue;
+            }
+            Database::run(
+                'UPDATE analytics_sessions
+                    SET lat = :lat, lng = :lng, country = :country, country_code = :cc
+                  WHERE id = :id',
+                [
+                    'lat' => $geo['lat'],
+                    'lng' => $geo['lng'],
+                    'country' => $geo['country'],
+                    'cc' => $geo['country_code'],
+                    'id' => $row['id'],
+                ]
+            );
+            $n++;
+        }
+        return $n;
     }
 
     // ---- helpers ---------------------------------------------------------
