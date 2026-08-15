@@ -31,6 +31,23 @@ final class Token
         return (array) $decoded;
     }
 
+    /**
+     * A signed, self-contained token scoping a site to an editor render mode
+     * (edit | preview). Lets the theme iframe load without an auth header —
+     * the token is the credential and carries the site id + mode.
+     */
+    public static function issueScoped(string $type, int $subject, int $ttl): string
+    {
+        $now = time();
+        return JWT::encode([
+            'sub' => $subject,
+            'iat' => $now,
+            'nbf' => $now,
+            'exp' => $now + $ttl,
+            'type' => $type,
+        ], (string) config('jwt.secret'), 'HS256');
+    }
+
     /** Opaque refresh token (returned to client) + its storable hash. */
     public static function newRefreshToken(): array
     {
