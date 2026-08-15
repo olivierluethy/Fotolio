@@ -89,7 +89,11 @@ export default function Analytics({ showGlobe = false, heading = true }) {
             ))}
           </div>
 
-          {showGlobe && <div className="mb-4"><VisitorGlobe countries={ov.countries} /></div>}
+          {showGlobe && (
+            <div className="mb-4">
+              <VisitorGlobe points={rt?.located || []} countriesLocated={rt?.located_countries || 0} demo={!!rt?.geoip_demo} />
+            </div>
+          )}
 
           {empty ? (
             <div className="card p-8 text-center">
