@@ -53,6 +53,12 @@ final class Config
             'oauth.google'   => (string) env('GOOGLE_CLIENT_ID', ''),
             'oauth.facebook' => (string) env('FACEBOOK_CLIENT_ID', ''),
             'oauth.apple'    => (string) env('APPLE_CLIENT_ID', ''),
+
+            // Self-hosted GeoIP: drop a GeoLite2-Country.mmdb here to resolve
+            // visitor countries with no per-request external calls. Absent =>
+            // "Unknown" fallback. See docs/ANALYTICS.md.
+            'analytics.geolite_path' => env('GEOLITE2_DB', 'storage/GeoLite2-Country.mmdb'),
+            'analytics.active_window' => (int) env('ANALYTICS_ACTIVE_WINDOW', 300),
         ];
         self::$booted = true;
     }
