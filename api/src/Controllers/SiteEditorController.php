@@ -111,7 +111,8 @@ final class SiteEditorController extends Controller
             return $this->renderer->notFound();
         }
         $path = trim((string) $request->query('path', ''), '/');
-        return $this->renderer->render($siteRow, $path, $mode, null, $token);
+        $fragment = $mode === 'edit' ? ($request->query('fragment') ?: null) : null;
+        return $this->renderer->render($siteRow, $path, $mode, null, $token, $fragment);
     }
 
     private function verifyToken(string $token, string $type): ?int

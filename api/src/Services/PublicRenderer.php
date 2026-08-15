@@ -28,7 +28,7 @@ final class PublicRenderer
     ) {
     }
 
-    public function render(array $siteRow, string $path, string $mode = 'live', ?array $doc = null, ?string $token = null): Response
+    public function render(array $siteRow, string $path, string $mode = 'live', ?array $doc = null, ?string $token = null, ?string $fragment = null): Response
     {
         $this->mode = $mode;
         $this->token = $token;
@@ -95,7 +95,32 @@ final class PublicRenderer
             'renderer' => $this,
         ];
 
+        // Partial re-render for the bridge: swap one region without a full reload.
+        if ($fragment !== null) {
+            return Response::html($this->fragment($fragment, $data));
+        }
+
         return Response::html($this->view('layout', $data));
+    }
+
+    /** Render a single region for a live partial re-render (edit mode). */
+    private function fragment(string $name, array $data): string
+    {
+        $view = $data['view'];
+        switch ($name) {
+            case 'hero':
+                return in_array($view, ['home', 'gallery'], true) && !empty($data['headerImages'])
+                    ? $this->view('_hero', $data)
+                    : '';
+            case 'subnav':
+                return $this->view('_subnav', $data);
+            case 'main':
+                return $view === 'page'
+                    ? $this->view('page', $data)
+                    : $this->view('gallery', $data);
+            default:
+                return '';
+        }
     }
 
     public function notFound(): Response
