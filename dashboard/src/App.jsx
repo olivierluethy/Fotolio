@@ -8,9 +8,7 @@ import Register from './pages/Register';
 import Overview from './pages/Overview';
 import Upload from './pages/Upload';
 import Library from './pages/Library';
-import Galleries from './pages/Galleries';
-import HeaderBuilder from './pages/HeaderBuilder';
-import Pages from './pages/Pages';
+import SiteEditor from './pages/SiteEditor';
 import Settings from './pages/Settings';
 
 function FullPageLoader() {
@@ -52,9 +50,11 @@ export default function App() {
         <Route index element={<Overview />} />
         <Route path="upload" element={<Upload />} />
         <Route path="library" element={<Library />} />
-        <Route path="galleries" element={<Galleries />} />
-        <Route path="header" element={<HeaderBuilder />} />
-        <Route path="pages" element={<Pages />} />
+        <Route path="editor" element={<SiteEditor />} />
+        {/* Legacy routes now live inside the unified Site Editor. */}
+        <Route path="galleries" element={<Navigate to="/app/editor" replace />} />
+        <Route path="header" element={<Navigate to="/app/editor" replace />} />
+        <Route path="pages" element={<Navigate to="/app/editor" replace />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

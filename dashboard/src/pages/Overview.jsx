@@ -102,9 +102,9 @@ export default function Overview() {
           <h2 className="font-display font-semibold text-lg text-ink mb-4">Set up your site</h2>
           <ul className="space-y-2.5">
             <Task done={data.images.length > 0} to="/app/upload" label="Upload photos" />
-            <Task done={data.galleries.some((g) => g.image_count > 0)} to="/app/galleries" label="Fill a gallery" />
-            <Task done={!!site?.home_header?.image_ids?.length} to="/app/header" label="Design your hero" />
-            <Task done={data.pages.length > 0} to="/app/pages" label="Add an About page" />
+            <Task done={data.galleries.some((g) => g.image_count > 0)} to="/app/editor" label="Fill a gallery" />
+            <Task done={!!site?.home_header?.image_ids?.length} to="/app/editor" label="Design your hero" />
+            <Task done={data.pages.length > 0} to="/app/editor" label="Add an About page" />
             <Task done={!!site?.published} to="/app/settings" label="Publish your site" />
           </ul>
         </div>

@@ -10,9 +10,7 @@ const NAV = [
   { to: '/app', end: true, icon: 'gauge', label: 'Overview' },
   { to: '/app/upload', icon: 'upload', label: 'Upload' },
   { to: '/app/library', icon: 'image', label: 'Library' },
-  { to: '/app/galleries', icon: 'grid', label: 'Galleries' },
-  { to: '/app/header', icon: 'layout', label: 'Header & hero' },
-  { to: '/app/pages', icon: 'file', label: 'Pages' },
+  { to: '/app/editor', icon: 'layout', label: 'Site editor' },
   { to: '/app/settings', icon: 'settings', label: 'Settings & publish' },
 ];
 
