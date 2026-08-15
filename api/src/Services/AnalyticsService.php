@@ -128,7 +128,7 @@ final class AnalyticsService
                 ['s' => $siteId, 'since' => $since]
             ),
             'referrers' => $this->groupReferrers($siteId, $since),
-            'countries' => $this->group('country', $siteId, $since),
+            'countries' => $this->groupCountries($siteId, $since),
             'devices' => $this->group('device', $siteId, $since),
             'browsers' => $this->group('browser', $siteId, $since),
             'trend' => $this->trend($siteId, $days),
@@ -181,6 +181,17 @@ final class AnalyticsService
                FROM analytics_sessions
               WHERE site_id = :s AND last_seen >= :since
               GROUP BY label ORDER BY count DESC LIMIT 8",
+            ['s' => $siteId, 'since' => $since]
+        );
+    }
+
+    private function groupCountries(int $siteId, string $since): array
+    {
+        return Database::all(
+            "SELECT COALESCE(country, 'Unknown') AS label, country_code, COUNT(*) AS count
+               FROM analytics_sessions
+              WHERE site_id = :s AND last_seen >= :since
+              GROUP BY label, country_code ORDER BY count DESC LIMIT 8",
             ['s' => $siteId, 'since' => $since]
         );
     }
