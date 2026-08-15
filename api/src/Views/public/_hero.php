@@ -1,5 +1,6 @@
 <?php
-/** @var array $header @var array $headerImages @var array $site @var \Fotolio\Services\PublicRenderer $r */
+/** @var array $header @var array $headerImages @var array $site @var bool $editable @var \Fotolio\Services\PublicRenderer $r */
+$editable = $editable ?? false;
 if (empty($header) || empty($headerImages)) {
     return;
 }
@@ -15,8 +16,9 @@ $align = $overlay['align'] ?? 'center';
 $title = $overlay['title'] ?: $site['title'];
 $subtitle = $overlay['subtitle'] ?? '';
 $isShow = $mode === 'slideshow' && count($headerImages) > 1;
+$ed = fn (string $attrs) => $editable ? $attrs : '';
 ?>
-<section class="hero h-<?= $r->e($height) ?>"
+<section class="hero h-<?= $r->e($height) ?>" <?= $ed('data-edit-region="hero"') ?>
   <?= $isShow ? 'data-slideshow data-interval="' . (int)($slideshow['interval'] ?? 5000) . '" data-autoplay="' . (!empty($slideshow['autoplay']) ? '1' : '0') . '"' : '' ?>
   <?= $parallax ? 'data-parallax' : '' ?>>
   <div class="hero-slides">
@@ -29,8 +31,10 @@ $isShow = $mode === 'slideshow' && count($headerImages) > 1;
 
   <div class="hero-inner pos-<?= $r->e($pos) ?>">
     <div class="hero-content align-<?= $r->e($align) ?>">
-      <h1><?= $r->e($title) ?></h1>
-      <?php if ($subtitle): ?><p class="subtitle"><?= $r->e($subtitle) ?></p><?php endif ?>
+      <h1 <?= $ed('data-editable="hero.title" contenteditable="true" spellcheck="false"') ?>><?= $r->e($title) ?></h1>
+      <?php if ($subtitle || $editable): ?>
+        <p class="subtitle<?= $subtitle ? '' : ' is-empty' ?>" <?= $ed('data-editable="hero.subtitle" contenteditable="true" spellcheck="false" data-placeholder="Add a subtitle…"') ?>><?= $r->e($subtitle) ?></p>
+      <?php endif ?>
       <?php if ($animate && $words): ?>
         <div class="rotator" data-rotator>
           <?php foreach ($words as $w): ?><span class="word"><?= $r->e($w) ?></span><?php endforeach ?>
@@ -48,4 +52,6 @@ $isShow = $mode === 'slideshow' && count($headerImages) > 1;
       <button data-next aria-label="Next slide">&#8250;</button>
     </div>
   <?php endif ?>
+
+  <?php if ($editable): ?><button class="fx-edit-hint" data-edit-open="hero" type="button"><span class="fx-dot"></span> Edit hero</button><?php endif ?>
 </section>

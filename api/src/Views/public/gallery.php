@@ -1,28 +1,37 @@
 <?php
-/** @var array $site @var ?array $current @var array $images @var string $view @var \Fotolio\Services\PublicRenderer $r */
-$heading = $view === 'gallery' && $current ? $current['name'] : 'Selected work';
-$desc = $view === 'gallery' && $current ? ($current['description'] ?? '') : ($site['tagline'] ?? '');
+/** @var array $site @var ?array $current @var array $images @var string $view @var bool $editable @var \Fotolio\Services\PublicRenderer $r */
+$editable = $editable ?? false;
+$isGallery = $view === 'gallery' && $current;
+$heading = $isGallery ? $current['name'] : 'Selected work';
+$desc = $isGallery ? ($current['description'] ?? '') : ($site['tagline'] ?? '');
+$region = $isGallery ? 'data-edit-region="gallery" data-gallery-id="' . (int) $current['id'] . '"' : 'data-edit-region="home-grid"';
 ?>
-<div class="section">
+<div class="section" <?= $editable ? $region : '' ?>>
   <div class="wrap">
-    <div class="section-head" data-reveal>
+    <div class="section-head"<?= $editable ? '' : ' data-reveal' ?>>
       <div class="eyebrow"><?= $view === 'home' ? 'Portfolio' : 'Gallery' ?></div>
-      <h2><?= $r->e($heading) ?></h2>
-      <?php if ($desc): ?><p><?= $r->e($desc) ?></p><?php endif ?>
+      <?php if ($editable && $isGallery): ?>
+        <h2 data-editable="gallery.name" contenteditable="true" spellcheck="false"><?= $r->e($heading) ?></h2>
+        <p class="<?= $desc ? '' : 'is-empty' ?>" data-editable="gallery.description" contenteditable="true" spellcheck="false" data-placeholder="Add a short description shown on the gallery page…"><?= $r->e($desc) ?></p>
+      <?php else: ?>
+        <h2><?= $r->e($heading) ?></h2>
+        <?php if ($desc): ?><p><?= $r->e($desc) ?></p><?php endif ?>
+      <?php endif ?>
     </div>
 
     <?php if (empty($images)): ?>
       <div class="empty">
         <h3>No photographs here yet</h3>
-        <p>This gallery is still being curated. Check back soon.</p>
+        <p><?= $editable ? 'Add photos to this gallery from the panel on the left.' : 'This gallery is still being curated. Check back soon.' ?></p>
       </div>
     <?php else: ?>
-      <div class="grid">
+      <div class="grid" <?= $editable ? 'data-photo-grid' : '' ?>>
         <?php foreach ($images as $img):
             $full = $img['variants']['large']['jpg'] ?? '';
             $loc = $img['location'] ?: '';
             $method = $img['capture_method']; ?>
-          <figure class="tile" data-lightbox
+          <figure class="tile<?= $editable ? ' is-editable' : '' ?>"
+            <?php if (!$editable): ?>data-lightbox<?php else: ?>data-image-id="<?= (int) $img['id'] ?>"<?php endif ?>
             data-full="<?= $r->e($full) ?>"
             data-title="<?= $r->e($img['title']) ?>"
             data-loc="<?= $r->e($loc) ?>"
