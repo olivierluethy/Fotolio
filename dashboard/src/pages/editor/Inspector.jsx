@@ -68,6 +68,8 @@ function SitePanel({ e }) {
   const social = s.settings?.social && !Array.isArray(s.settings.social) ? s.settings.social : {};
   const [instagram, setInstagram] = useState(social.instagram || '');
   const [email, setEmail] = useState(social.email || '');
+  const [accent, setAccentVal] = useState(s.settings?.accent || '');
+  const [css, setCss] = useState(s.settings?.custom_css || '');
 
   const commitSocial = () => e.ops.setSocial({ ...(social || {}), instagram, email });
 
@@ -88,6 +90,26 @@ function SitePanel({ e }) {
         </Field>
         <Field label="Instagram" className="mt-3"><Input value={instagram} onChange={(ev) => setInstagram(ev.target.value)} onBlur={commitSocial} placeholder="https://instagram.com/you" /></Field>
         <Field label="Email" className="mt-3"><Input value={email} onChange={(ev) => setEmail(ev.target.value)} onBlur={commitSocial} placeholder="you@studio.com" /></Field>
+      </Group>
+      <Group title="Design">
+        <Field label="Accent colour" hint="Buttons, links and highlights across your site.">
+          <div className="flex items-center gap-2">
+            <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#22B8C4'} aria-label="Accent colour"
+              onChange={(ev) => { setAccentVal(ev.target.value); e.ops.setAccent(ev.target.value); }}
+              className="w-9 h-9 flex-none rounded-md border bg-surface cursor-pointer p-0.5" />
+            <Input value={accent} onChange={(ev) => setAccentVal(ev.target.value)} onBlur={() => e.ops.setAccent(accent.trim())} placeholder="#22B8C4" className="font-mono" />
+            {accent && (
+              <button onClick={() => { setAccentVal(''); e.ops.setAccent(''); }} title="Reset to default"
+                className="flex-none w-9 h-9 grid place-items-center rounded-md border text-ink-muted hover:text-ink hover:bg-surface-2"><Icon name="x" size={15} /></button>
+            )}
+          </div>
+        </Field>
+      </Group>
+      <Group title="Custom CSS">
+        <p className="text-[12px] text-ink-faint mb-2 leading-snug">Advanced — target your site's classes. Applies to the live site, preview and this canvas; it can't affect the dashboard.</p>
+        <Textarea value={css} rows={8} spellCheck={false} className="font-mono !text-[12px] leading-relaxed"
+          onChange={(ev) => { setCss(ev.target.value); e.ops.setCustomCss(ev.target.value); }}
+          placeholder={'.hero-title { letter-spacing: -.02em; }\n.tile img { border-radius: 12px; }'} />
       </Group>
       <Group title="Jump to">
         <JumpList e={e} />

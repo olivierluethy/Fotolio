@@ -125,8 +125,24 @@
       case 'deselect': selectRegion(null); break;
       case 'pulse': pulse(d.region, d.id); break;
       case 'scroll-to': scrollToRegion(d.region, d.id); break;
+      case 'accent': setAccent(d.value); break;
+      case 'custom-css': setCustomCss(d.css); break;
     }
   });
+
+  function setAccent(value) {
+    if (value) document.documentElement.style.setProperty('--accent', value);
+    else document.documentElement.style.removeProperty('--accent');
+  }
+  function setCustomCss(css) {
+    var el = document.getElementById('fotolio-custom-css');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'fotolio-custom-css';
+      document.head.appendChild(el);
+    }
+    el.textContent = css || '';
+  }
 
   function heroStyle(d) {
     var hero = document.querySelector('.hero');

@@ -370,6 +370,18 @@ export function useSiteEditor() {
       mutate((d) => { d.site.settings = { ...(d.site.settings || {}), social }; });
       reloadFull();
     },
+
+    // Global design: accent colour + per-site custom CSS. Both live in the
+    // draft (so they publish with everything else) and preview live via the
+    // bridge — no full reload while dragging a colour or typing CSS.
+    setAccent(value) {
+      mutate((d) => { d.site.settings = { ...(d.site.settings || {}), accent: value }; }, { group: true });
+      postToCanvas('accent', { value });
+    },
+    setCustomCss(css) {
+      mutate((d) => { d.site.settings = { ...(d.site.settings || {}), custom_css: css }; }, { group: true });
+      postToCanvas('custom-css', { css });
+    },
   }), [mutate, postNav, postToCanvas, reloadFragment, reloadFull, galleriesById]);
 
   // ---- Entity CRUD (galleries / pages are table-backed) -----------------

@@ -59,7 +59,10 @@ $subviewData = compact('site', 'navGalleries', 'navPages', 'view', 'current', 'i
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/theme.css">
 <?php if ($editable): ?><link rel="stylesheet" href="/assets/editor.css"><?php endif ?>
-<?php if (!empty($site['accent'])): ?><style>:root{--accent:<?= $r->e($site['accent']) ?>;}</style><?php endif ?>
+<?php $accent = $settings['accent'] ?? ($site['accent'] ?? ''); if (!empty($accent)): ?><style>:root{--accent:<?= $r->e($accent) ?>;}</style><?php endif ?>
+<?php if (!empty($settings['custom_css'])): /* the owner's own CSS, scoped to this site document (never the dashboard); tag break-out neutralised */ ?>
+<style id="fotolio-custom-css"><?= str_ireplace('</style', '<\/style', (string) $settings['custom_css']) ?></style>
+<?php endif ?>
 </head>
 <body class="<?= $editable ? 'is-editing' : '' ?>" data-fotolio-mode="<?= $r->e($mode) ?>">
 
