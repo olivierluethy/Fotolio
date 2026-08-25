@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Wordmark } from './Brand';
 import { Icon } from './ui/Icon';
 import { ThemeToggle } from './ThemeToggle';
+import { ErrorBoundary } from './ErrorBoundary';
 import { classNames } from '../lib/format';
 
 const NAV = [
@@ -11,6 +12,7 @@ const NAV = [
   { to: '/app/analytics', icon: 'activity', label: 'Analytics' },
   { to: '/app/upload', icon: 'upload', label: 'Upload' },
   { to: '/app/library', icon: 'image', label: 'Library' },
+  { to: '/app/sites', icon: 'layers', label: 'Sites' },
   { to: '/app/editor', icon: 'layout', label: 'Site editor' },
   { to: '/app/settings', icon: 'settings', label: 'Settings & publish' },
 ];
@@ -19,6 +21,7 @@ export function DashboardLayout() {
   const { user, site, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const onLogout = async () => {
     await logout();
@@ -100,7 +103,11 @@ export function DashboardLayout() {
           </div>
         </header>
         <main className="flex-1 px-4 lg:px-8 py-6 lg:py-8 max-w-content w-full mx-auto">
-          <Outlet />
+          {/* Keyed by path so each page gets a fresh boundary — a crash on one
+              route is contained and clears when you navigate away. */}
+          <ErrorBoundary key={location.pathname} label="page">
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>
@@ -121,9 +128,13 @@ function PublishPill({ site }) {
 function AccountBox({ user, onLogout }) {
   return (
     <div className="border-t p-3 flex items-center gap-3">
-      <div className="w-9 h-9 rounded-full grid place-items-center font-mono text-sm flex-none" style={{ background: 'var(--accent-weak)', color: 'var(--accent)' }}>
-        {(user?.name || 'U').slice(0, 1).toUpperCase()}
-      </div>
+      {user?.avatar_path ? (
+        <img src={user.avatar_path} alt="" className="w-9 h-9 rounded-full object-cover flex-none border" />
+      ) : (
+        <div className="w-9 h-9 rounded-full grid place-items-center font-mono text-sm flex-none" style={{ background: 'var(--accent-weak)', color: 'var(--accent)' }}>
+          {(user?.name || 'U').slice(0, 1).toUpperCase()}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium truncate text-ink">{user?.name}</div>
         <div className="text-[12px] truncate text-ink-faint">{user?.email}</div>

@@ -102,12 +102,14 @@ const TABS = [
   { key: 'site', label: 'Site', icon: 'settings', select: { kind: 'site' }, path: '' },
   { key: 'galleries', label: 'Galleries', icon: 'grid', select: { kind: 'nav' }, path: '' },
   { key: 'pages', label: 'Pages', icon: 'file', select: { kind: 'pages' } },
+  { key: 'footer', label: 'Footer', icon: 'layout', select: { kind: 'footer' } },
 ];
 function TabStrip({ e }) {
   const sel = e.selection;
   const active = sel.kind === 'site' ? 'site'
     : (sel.kind === 'nav' || sel.kind === 'gallery') ? 'galleries'
     : (sel.kind === 'pages' || sel.kind === 'page') ? 'pages'
+    : sel.kind === 'footer' ? 'footer'
     : sel.kind === 'hero' ? (sel.target?.startsWith('gallery') ? 'galleries' : sel.target?.startsWith('page') ? 'pages' : 'site')
     : 'site';
 

@@ -8,6 +8,7 @@ api/storage/*.sqlite
 api/storage/*.sqlite-*
 api/storage/originals/*
 api/storage/tmp/*
+api/storage/cache/
 api/public/media/*
 !**/.gitkeep
 # os

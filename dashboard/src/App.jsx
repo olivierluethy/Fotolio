@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { Spinner } from './components/ui/Button';
 import { DashboardLayout } from './components/DashboardLayout';
+import { ErrorBoundary, lazyWithReload } from './components/ErrorBoundary';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -10,10 +11,12 @@ import Overview from './pages/Overview';
 import Upload from './pages/Upload';
 import Library from './pages/Library';
 import SiteEditor from './pages/SiteEditor';
+import Sites from './pages/Sites';
 import Settings from './pages/Settings';
 
-// Lazy: pulls in three.js/globe.gl only when the Analytics tab is opened.
-const AnalyticsPage = lazy(() => import('./pages/Analytics'));
+// Lazy: pulls in the cobe WebGL globe only when the Analytics tab is opened.
+// lazyWithReload recovers from a stale-chunk 504 after a Vite rebuild/deploy.
+const AnalyticsPage = lazyWithReload(() => import('./pages/Analytics'), 'analytics');
 
 function FullPageLoader() {
   return (
@@ -53,12 +56,15 @@ export default function App() {
       >
         <Route index element={<Overview />} />
         <Route path="analytics" element={
-          <Suspense fallback={<div className="grid place-items-center py-24 text-accent"><Spinner size={26} /></div>}>
-            <AnalyticsPage />
-          </Suspense>
+          <ErrorBoundary label="Analytics page">
+            <Suspense fallback={<div className="grid place-items-center py-24 text-accent"><Spinner size={26} /></div>}>
+              <AnalyticsPage />
+            </Suspense>
+          </ErrorBoundary>
         } />
         <Route path="upload" element={<Upload />} />
         <Route path="library" element={<Library />} />
+        <Route path="sites" element={<Sites />} />
         <Route path="editor" element={<SiteEditor />} />
         {/* Legacy routes now live inside the unified Site Editor. */}
         <Route path="galleries" element={<Navigate to="/app/editor" replace />} />

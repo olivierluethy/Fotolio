@@ -96,20 +96,7 @@ $subviewData = compact('site', 'navGalleries', 'navPages', 'view', 'current', 'i
   <?php endif ?>
 </main>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <div>
-      <div class="brand" style="font-size:16px"><?= $r->e($site['title']) ?></div>
-      <?php if (!empty($settings['footer'])): ?><div class="madeby" style="margin-top:6px"><?= $r->e($settings['footer']) ?></div><?php endif ?>
-    </div>
-    <div class="socials">
-      <?php foreach (($settings['social'] ?? []) as $label => $href): if (!$href) continue; ?>
-        <a href="<?= $r->e(str_contains((string)$href, '@') ? 'mailto:' . $href : $href) ?>" target="_blank" rel="noopener"><?= $r->e(ucfirst($label)) ?></a>
-      <?php endforeach ?>
-    </div>
-    <div class="madeby">Made with Fotolio</div>
-  </div>
-</footer>
+<?= $r->view('_footer', $subviewData) ?>
 
 <script src="/assets/theme.js" defer></script>
 <?php if ($editable): ?>

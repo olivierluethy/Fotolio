@@ -7,13 +7,31 @@ use Fotolio\Core\HttpException;
 
 final class SiteService
 {
-    /** Provision the single site + default Home gallery for a new user. */
+    /** Provision the first site + default Home gallery for a new user. */
     public function createForUser(int $userId, string $displayName): int
     {
-        $slug = $this->uniqueSlug(str_slug($displayName) ?: 'studio');
+        $siteId = $this->provision($userId, trim($displayName) . "'s portfolio", str_slug($displayName) ?: 'studio');
+        // First site becomes the active one.
+        Database::update('users', ['current_site_id' => $siteId, 'updated_at' => Database::now()], 'id = :id', ['id' => $userId]);
+        return $siteId;
+    }
+
+    /** Create an additional site for an existing user and make it active. */
+    public function createSite(int $userId, string $title): array
+    {
+        $title = trim($title) !== '' ? trim($title) : 'Untitled site';
+        $siteId = $this->provision($userId, $title, $title);
+        Database::update('users', ['current_site_id' => $siteId, 'updated_at' => Database::now()], 'id = :id', ['id' => $userId]);
+        return $this->find($siteId);
+    }
+
+    /** Shared provisioning: a site row, its Home gallery, and seeded state docs. */
+    private function provision(int $userId, string $title, string $slugBase): int
+    {
+        $slug = $this->uniqueSlug(str_slug($slugBase) ?: 'studio');
         $siteId = Database::insert('sites', [
             'user_id' => $userId,
-            'title' => trim($displayName) . "'s portfolio",
+            'title' => $title,
             'tagline' => null,
             'slug' => $slug,
             'subdomain' => null,
@@ -52,13 +70,83 @@ final class SiteService
         return $siteId;
     }
 
+    /** The user's active site (their `current_site_id`, else their first site). */
     public function forUser(int $userId): array
     {
-        $site = Database::fetch('SELECT * FROM sites WHERE user_id = :u', ['u' => $userId]);
+        $current = Database::column('SELECT current_site_id FROM users WHERE id = :u', ['u' => $userId]);
+        $site = null;
+        if ($current) {
+            $site = Database::fetch('SELECT * FROM sites WHERE id = :id AND user_id = :u', ['id' => $current, 'u' => $userId]);
+        }
+        if (!$site) {
+            $site = Database::fetch('SELECT * FROM sites WHERE user_id = :u ORDER BY id LIMIT 1', ['u' => $userId]);
+            if ($site) {
+                Database::update('users', ['current_site_id' => $site['id']], 'id = :id', ['id' => $userId]);
+            }
+        }
         if (!$site) {
             throw HttpException::notFound('Site not found.');
         }
         return $this->hydrate($site);
+    }
+
+    /** Every site the user owns (hydrated), newest activity first by id. */
+    public function listForUser(int $userId): array
+    {
+        $rows = Database::all('SELECT * FROM sites WHERE user_id = :u ORDER BY id', ['u' => $userId]);
+        $current = (int) (Database::column('SELECT current_site_id FROM users WHERE id = :u', ['u' => $userId]) ?? 0);
+        // If no active site is stored yet, treat the first as current.
+        if ($current === 0 && $rows) {
+            $current = (int) $rows[0]['id'];
+        }
+        return array_map(function ($s) use ($current) {
+            $h = $this->hydrate($s);
+            $h['is_current'] = (int) $s['id'] === $current;
+            return $h;
+        }, $rows);
+    }
+
+    /** Switch the user's active site (must own it). */
+    public function activate(int $userId, int $siteId): array
+    {
+        $this->ownOrFail($userId, $siteId);
+        Database::update('users', ['current_site_id' => $siteId, 'updated_at' => Database::now()], 'id = :id', ['id' => $userId]);
+        return $this->find($siteId);
+    }
+
+    /**
+     * Delete a site and everything scoped to it. Refuses to delete a user's last
+     * site (they always have one). Explicit child deletes keep it correct on
+     * SQLite where ON DELETE CASCADE isn't enforced by default.
+     */
+    public function deleteSite(int $userId, int $siteId): void
+    {
+        $this->ownOrFail($userId, $siteId);
+        $count = (int) Database::column('SELECT COUNT(*) FROM sites WHERE user_id = :u', ['u' => $userId]);
+        if ($count <= 1) {
+            throw HttpException::unprocessable('You can’t delete your only site.');
+        }
+        // image_gallery has no site_id — clear its links via this site's galleries first.
+        Database::run('DELETE FROM image_gallery WHERE gallery_id IN (SELECT id FROM galleries WHERE site_id = :s)', ['s' => $siteId]);
+        foreach (['analytics_events', 'analytics_sessions', 'analytics_goals', 'images', 'pages', 'galleries'] as $table) {
+            Database::delete($table, 'site_id = :s', ['s' => $siteId]);
+        }
+        Database::delete('sites', 'id = :id', ['id' => $siteId]);
+
+        // If we deleted the active site, fall back to another owned site.
+        $current = Database::column('SELECT current_site_id FROM users WHERE id = :u', ['u' => $userId]);
+        if ((int) $current === $siteId) {
+            $next = Database::column('SELECT id FROM sites WHERE user_id = :u ORDER BY id LIMIT 1', ['u' => $userId]);
+            Database::update('users', ['current_site_id' => $next], 'id = :id', ['id' => $userId]);
+        }
+    }
+
+    private function ownOrFail(int $userId, int $siteId): void
+    {
+        $ok = Database::column('SELECT id FROM sites WHERE id = :id AND user_id = :u', ['id' => $siteId, 'u' => $userId]);
+        if (!$ok) {
+            throw HttpException::notFound('Site not found.');
+        }
     }
 
     public function find(int $siteId): ?array

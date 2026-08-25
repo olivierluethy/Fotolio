@@ -6,6 +6,7 @@ import { PageHead } from './Upload';
 import { Button, IconButton } from '../components/ui/Button';
 import { Field, Input, Textarea, Toggle } from '../components/ui/Controls';
 import { Icon } from '../components/ui/Icon';
+import { ShareMenu } from '../components/ShareMenu';
 
 function Section({ title, subtitle, children, action }) {
   return (
@@ -23,15 +24,16 @@ function Section({ title, subtitle, children, action }) {
 }
 
 export default function Settings() {
-  const { site, setSite } = useAuth();
+  const { site, setSite, user, refreshMe } = useAuth();
   const toast = useToast();
 
   if (!site) return null;
 
   return (
     <div className="max-w-3xl">
-      <PageHead title="Settings & publish" subtitle="Your site details, web address, and going live." />
+      <PageHead title="Settings & publish" subtitle="Your profile, site details, web address, and going live." />
       <div className="space-y-6">
+        <AccountSection user={user} refreshMe={refreshMe} toast={toast} />
         <PublishSection site={site} setSite={setSite} toast={toast} />
         <DetailsSection site={site} setSite={setSite} toast={toast} />
         <SubdomainSection site={site} setSite={setSite} toast={toast} />
@@ -80,7 +82,98 @@ function PublishSection({ site, setSite, toast }) {
           {site.published ? 'Unpublish' : 'Publish site'}
         </Button>
       </div>
-      <div className="mt-4"><CopyableUrl url={site.public_url} /></div>
+      <div className="mt-4">
+        {site.published
+          ? <ShareMenu url={site.public_url} title={`${site.title} — portfolio`} />
+          : <CopyableUrl url={site.public_url} />}
+      </div>
+    </Section>
+  );
+}
+
+function AccountSection({ user, refreshMe, toast }) {
+  const [name, setName] = useState(user?.name || '');
+  const [url, setUrl] = useState('');
+  const [busy, setBusy] = useState('');
+  const [drag, setDrag] = useState(false);
+  const avatar = user?.avatar_path || '';
+
+  const saveName = async () => {
+    if (!name.trim() || name.trim() === user?.name) return;
+    setBusy('name');
+    try { await api.patch('/auth/profile', { name: name.trim() }); await refreshMe(); toast.success('Name updated.'); }
+    catch (e) { toast.error(e.message); } finally { setBusy(''); }
+  };
+
+  const setAvatarUrl = async () => {
+    if (!url.trim()) return;
+    setBusy('url');
+    try { await api.patch('/auth/profile', { avatar_path: url.trim() }); await refreshMe(); setUrl(''); toast.success('Profile picture set.'); }
+    catch (e) { toast.error(e.message); } finally { setBusy(''); }
+  };
+
+  const removeAvatar = async () => {
+    setBusy('rm');
+    try { await api.patch('/auth/profile', { avatar_path: '' }); await refreshMe(); toast.info('Profile picture removed.'); }
+    catch (e) { toast.error(e.message); } finally { setBusy(''); }
+  };
+
+  const uploadFile = async (file) => {
+    if (!file || !file.type.startsWith('image/')) { toast.error('Please choose an image file.'); return; }
+    setBusy('upload');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      await api.upload('/auth/avatar', fd);
+      await refreshMe();
+      toast.success('Profile picture uploaded.');
+    } catch (e) { toast.error(e.message); } finally { setBusy(''); }
+  };
+
+  return (
+    <Section title="Your profile" subtitle="Your name and picture across the dashboard.">
+      <Field label="Username">
+        <div className="flex items-center gap-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          <Button size="sm" onClick={saveName} loading={busy === 'name'} disabled={!name.trim() || name.trim() === user?.name}>Save</Button>
+        </div>
+      </Field>
+
+      <div className="mt-5">
+        <div className="label">Profile picture</div>
+        <div className="flex items-start gap-4">
+          {avatar
+            ? <img src={avatar} alt="" className="w-20 h-20 rounded-full object-cover border flex-none" />
+            : <div className="w-20 h-20 rounded-full grid place-items-center flex-none border font-mono text-xl" style={{ background: 'var(--accent-weak)', color: 'var(--accent)' }}>{(user?.name || 'U').slice(0, 1).toUpperCase()}</div>}
+
+          <div className="flex-1 min-w-0 space-y-3">
+            {/* Drag & drop / click to upload */}
+            <label
+              onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+              onDragLeave={() => setDrag(false)}
+              onDrop={(e) => { e.preventDefault(); setDrag(false); uploadFile(e.dataTransfer.files?.[0]); }}
+              className={`flex items-center justify-center gap-2 h-20 rounded-lg border-2 border-dashed cursor-pointer text-sm transition-colors ${drag ? 'border-accent text-accent bg-surface-2' : 'text-ink-muted hover:text-ink hover:bg-surface-2'}`}
+              style={drag ? { borderColor: 'var(--accent)' } : undefined}>
+              <Icon name={busy === 'upload' ? 'clock' : 'upload'} size={16} />
+              {busy === 'upload' ? 'Uploading…' : 'Drag an image here, or click to choose'}
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadFile(e.target.files?.[0])} />
+            </label>
+
+            {/* Set from URL */}
+            <div className="flex items-center gap-2">
+              <Input value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && setAvatarUrl()} placeholder="…or paste an image URL" />
+              <Button size="sm" variant="secondary" onClick={setAvatarUrl} loading={busy === 'url'} disabled={!url.trim()}>Use URL</Button>
+            </div>
+            {url.trim() && /^https?:\/\//.test(url.trim()) && (
+              <div className="flex items-center gap-2 text-[12px] text-ink-faint">
+                <span>Preview:</span>
+                <img src={url.trim()} alt="" className="w-8 h-8 rounded-full object-cover border" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              </div>
+            )}
+            {avatar && <button className="link text-[13px]" onClick={removeAvatar} disabled={busy === 'rm'}>Remove picture</button>}
+          </div>
+        </div>
+      </div>
     </Section>
   );
 }

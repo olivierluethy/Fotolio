@@ -6,6 +6,7 @@ use Fotolio\Controllers\AnalyticsController;
 use Fotolio\Controllers\AuthController;
 use Fotolio\Controllers\DomainController;
 use Fotolio\Controllers\GalleryController;
+use Fotolio\Controllers\GeocodeController;
 use Fotolio\Controllers\ImageController;
 use Fotolio\Controllers\OAuthController;
 use Fotolio\Controllers\PageController;
@@ -103,14 +104,33 @@ final class Kernel
         $r->post('/api/analytics/collect', [AnalyticsController::class, 'collect']);
 
         $r->group($auth, function (Router $r) {
+            // ---- Profile -------------------------------------------------
+            $r->patch('/api/auth/profile', [AuthController::class, 'updateProfile']);
+            $r->post('/api/auth/avatar', [AuthController::class, 'uploadAvatar']);
+
             // ---- Site + publishing ---------------------------------------
             $r->get('/api/site', [SiteController::class, 'show']);
             $r->patch('/api/site', [SiteController::class, 'update']);
             $r->post('/api/site/publish', [SiteController::class, 'publish']);
 
-            // ---- Analytics (Overview dashboard) --------------------------
+            // ---- Sites (multi-site management) ---------------------------
+            $r->get('/api/sites', [SiteController::class, 'index']);
+            $r->post('/api/sites', [SiteController::class, 'store']);
+            $r->post('/api/sites/{id}/activate', [SiteController::class, 'activate']);
+            $r->delete('/api/sites/{id}', [SiteController::class, 'destroy']);
+
+            // ---- Analytics (Analytics dashboard) -------------------------
             $r->get('/api/analytics/overview', [AnalyticsController::class, 'overview']);
             $r->get('/api/analytics/realtime', [AnalyticsController::class, 'realtime']);
+            $r->get('/api/analytics/export', [AnalyticsController::class, 'export']);
+            $r->get('/api/analytics/compare', [AnalyticsController::class, 'compare']);
+            $r->get('/api/analytics/goals', [AnalyticsController::class, 'goals']);
+            $r->post('/api/analytics/goals', [AnalyticsController::class, 'storeGoal']);
+            $r->delete('/api/analytics/goals/{id}', [AnalyticsController::class, 'destroyGoal']);
+
+            // ---- Geocoding proxy (photo Location autocomplete) -----------
+            $r->get('/api/geocode', [GeocodeController::class, 'search']);
+            $r->get('/api/geocode/reverse', [GeocodeController::class, 'reverse']);
 
             // ---- Live Site Editor: draft / publish / discard / preview ----
             $r->get('/api/site/editor', [SiteEditorController::class, 'show']);

@@ -8,6 +8,7 @@ import { Field, Input, Textarea, Select, Segmented, EmptyState } from '../compon
 import { Modal } from '../components/ui/Modal';
 import { Icon } from '../components/ui/Icon';
 import { OptimizationLoupe } from '../components/OptimizationLoupe';
+import { LocationInput } from '../components/LocationInput';
 import { classNames, pct } from '../lib/format';
 
 export default function Library() {
@@ -205,6 +206,7 @@ function MetadataModal({ image, galleries, onClose, onSaved, onDeleted }) {
         tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         camera_make: form.camera_make, camera_model: form.camera_model, lens: form.lens,
         focal_length: form.focal_length, aperture: form.aperture, shutter: form.shutter, iso: form.iso,
+        gps_lat: form.gps_lat, gps_lng: form.gps_lng,
       };
       const { image: updated } = await api.patch(`/images/${image.id}`, payload);
       toast.success('Photo details saved.');
@@ -248,7 +250,7 @@ function MetadataModal({ image, galleries, onClose, onSaved, onDeleted }) {
               {current.exif?.captured_at && <div>Captured {current.exif.captured_at}</div>}
               {current.exif?.gps_lat != null && (
                 <div>GPS {current.exif.gps_lat}, {current.exif.gps_lng} — <button
-                  className="link" onClick={() => set('location', `${current.exif.gps_lat}, ${current.exif.gps_lng}`)}>use as location</button></div>
+                  className="link" onClick={() => setForm((f) => ({ ...f, location: `${current.exif.gps_lat}, ${current.exif.gps_lng}`, gps_lat: current.exif.gps_lat, gps_lng: current.exif.gps_lng }))}>use as location</button></div>
               )}
             </div>
           )}
@@ -256,7 +258,12 @@ function MetadataModal({ image, galleries, onClose, onSaved, onDeleted }) {
 
         <div className="space-y-3">
           <Field label="Title"><Input value={form.title} onChange={(e) => set('title', e.target.value)} /></Field>
-          <Field label="Location"><Input value={form.location} onChange={(e) => set('location', e.target.value)} placeholder="e.g. Meggenhorn, Lucerne" /></Field>
+          <Field label="Location" hint="Type to search places, or use the pin for your current location.">
+            <LocationInput value={form.location}
+              onChange={(v) => set('location', v)}
+              onPick={(p) => setForm((f) => ({ ...f, location: p.label || f.location, gps_lat: p.lat, gps_lng: p.lng }))}
+              placeholder="e.g. Meggenhorn, Lucerne" />
+          </Field>
           <Field label="Description"><Textarea rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} /></Field>
           <Field label="Captured with">
             <Segmented

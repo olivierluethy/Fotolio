@@ -18,6 +18,33 @@ final class SiteController extends Controller
         return Response::json(['site' => $this->sites->forUser($this->user($request)->id)]);
     }
 
+    /** All the user's sites, with the active one flagged. */
+    public function index(Request $request): Response
+    {
+        return Response::json(['sites' => $this->sites->listForUser($this->user($request)->id)]);
+    }
+
+    /** Create an additional site and make it active. */
+    public function store(Request $request): Response
+    {
+        $data = $this->validated($request, ['title' => 'required|string|min:1|max:160']);
+        $site = $this->sites->createSite($this->user($request)->id, $data['title']);
+        return Response::json(['site' => $site], 201);
+    }
+
+    /** Switch the active site. */
+    public function activate(Request $request, array $params): Response
+    {
+        $site = $this->sites->activate($this->user($request)->id, (int) $params['id']);
+        return Response::json(['site' => $site]);
+    }
+
+    public function destroy(Request $request, array $params): Response
+    {
+        $this->sites->deleteSite($this->user($request)->id, (int) $params['id']);
+        return Response::json(['message' => 'Site deleted.']);
+    }
+
     public function update(Request $request): Response
     {
         $validated = $this->validated($request, [

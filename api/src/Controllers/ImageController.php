@@ -44,7 +44,7 @@ final class ImageController extends Controller
             'description' => 'nullable|string|max:5000',
             'capture_method' => 'nullable|in:drone,camera,other',
         ]);
-        foreach (['tags', 'camera_make', 'camera_model', 'lens', 'focal_length', 'aperture', 'shutter', 'iso'] as $k) {
+        foreach (['tags', 'camera_make', 'camera_model', 'lens', 'focal_length', 'aperture', 'shutter', 'iso', 'gps_lat', 'gps_lng'] as $k) {
             if ($request->input($k) !== null) {
                 $data[$k] = $request->input($k);
             }
