@@ -17,6 +17,12 @@ export default defineConfig({
       '/favicon-32.png': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
+  // Pre-bundle cobe so its ESM loads as a single optimized dep. Without this the
+  // globe's dynamic chunk can 504 in dev after a dependency change (Vite serving
+  // a stale optimized module); listing it keeps the optimizer's hash stable.
+  optimizeDeps: {
+    include: ['cobe'],
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,

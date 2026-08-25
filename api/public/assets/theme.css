@@ -213,8 +213,18 @@ img, picture { display: block; max-width: 100%; }
 .prose h2 { font-size: 1.8rem; } .prose h3 { font-size: 1.35rem; }
 .prose p { margin: 0 0 1.1em; font-size: 1.075rem; color: var(--ink); }
 .prose p:first-child { font-size: 1.2rem; color: var(--ink-muted); }
-.prose figure { margin: 2em 0; } .prose figure img { border-radius: 12px; }
+.prose h1 { font-family: var(--font-display); letter-spacing: -.3px; font-size: 2.1rem; margin: 1.2em 0 .5em; }
+.prose h4 { font-family: var(--font-display); font-size: 1.15rem; margin: 1.3em 0 .5em; }
+.prose h5 { font-size: 1rem; font-weight: 600; margin: 1.2em 0 .4em; }
+.prose h6 { font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); margin: 1.2em 0 .4em; }
+.prose figure { margin: 2em 0; } .prose figure img { border-radius: 12px; max-width: 100%; height: auto; }
 .prose figcaption { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); margin-top: 8px; text-align: center; }
+/* Custom-editable tables + image alignment (Site Editor content blocks). */
+.table-wrap { overflow-x: auto; margin: 1.6em 0; }
+.prose-table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.prose-table th, .prose-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+.prose-table th { background: var(--surface-2); font-weight: 600; color: var(--ink); }
+.prose-table tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
 
 /* ---- Lightbox (symmetric open/close) -------------------------------------- */
 .lightbox {
@@ -245,12 +255,31 @@ img, picture { display: block; max-width: 100%; }
 .lb-next { right: 16px; top: 50%; transform: translateY(-50%); }
 @media (max-width: 560px) { .lb-prev { left: 8px; } .lb-next { right: 8px; } }
 
-/* ---- Footer --------------------------------------------------------------- */
+/* ---- Footer (customizable, block-based) ----------------------------------- */
 .site-footer { border-top: 1px solid var(--border); padding: 40px 0; margin-top: 40px; color: var(--ink-muted); }
-.site-footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
-.site-footer .socials { display: flex; gap: 18px; }
+.site-footer .wrap { display: block; }
+.footer-cols { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px 40px; align-items: start; }
+@media (max-width: 640px) { .footer-cols { grid-template-columns: 1fr !important; } }
+.footer-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.footer-block { margin: 0; min-width: 0; }
+.footer-heading { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--ink); line-height: 1.2; }
+.footer-text { font-size: inherit; line-height: 1.6; white-space: pre-wrap; }
+.footer-links { display: flex; flex-direction: column; gap: 8px; }
+.footer-links.inline { flex-direction: row; flex-wrap: wrap; gap: 18px; }
+.footer-social { display: flex; flex-wrap: wrap; gap: 18px; }
+.site-footer a { color: var(--footer-link, inherit); text-decoration: none; transition: color .15s; }
 .site-footer a:hover { color: var(--accent); }
-.site-footer .madeby { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
+.footer-divider { border: 0; border-top: 1px solid var(--border); width: 100%; margin: 4px 0; }
+.footer-image img { display: block; max-width: 100%; height: auto; }
+.footer-credit, .site-footer .madeby { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
+.footer-credit { margin-top: 28px; }
+/* Alignment */
+.site-footer[data-align="center"] .footer-col { align-items: center; text-align: center; }
+.site-footer[data-align="center"] .footer-social,
+.site-footer[data-align="center"] .footer-links.inline { justify-content: center; }
+.site-footer[data-align="right"] .footer-col { align-items: flex-end; text-align: right; }
+.site-footer[data-align="right"] .footer-social,
+.site-footer[data-align="right"] .footer-links.inline { justify-content: flex-end; }
 
 /* ---- Reduced motion ------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {

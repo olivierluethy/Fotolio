@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Button, IconButton } from '../../components/ui/Button';
-import { Field, Input, Textarea, Toggle, Segmented } from '../../components/ui/Controls';
+import { Field, Input, Textarea, Toggle, Segmented, Select } from '../../components/ui/Controls';
 import { Icon } from '../../components/ui/Icon';
 import { Sortable } from '../../components/Sortable';
 import { ImagePicker } from '../../components/ImagePicker';
-import { findGallery, findPage, readHeader } from './draftUtils';
+import {
+  findGallery, findPage, readHeader, readFooter, newPageBlock,
+  FOOTER_FONTS, SOCIAL_NETWORKS, FOOTER_BLOCKS, newFooterBlock,
+} from './draftUtils';
 
 /* Small building blocks --------------------------------------------------- */
 function PanelHead({ eyebrow, title, hint }) {
@@ -55,6 +58,7 @@ export function Inspector({ e }) {
   else if (selection.kind === 'gallery') panel = <GalleryPanel e={e} id={selection.id} />;
   else if (selection.kind === 'hero') panel = <HeroPanel e={e} target={selection.target} />;
   else if (selection.kind === 'page') panel = <PagePanel e={e} id={selection.id} />;
+  else if (selection.kind === 'footer') panel = <FooterPanel e={e} />;
   else panel = <SitePanel e={e} />;
   return <div key={key} className="p-4">{panel}</div>;
 }
@@ -64,14 +68,8 @@ function SitePanel({ e }) {
   const s = e.draft.site;
   const [title, setTitle] = useState(s.title || '');
   const [tagline, setTagline] = useState(s.tagline || '');
-  const [footer, setFooter] = useState(s.settings?.footer || '');
-  const social = s.settings?.social && !Array.isArray(s.settings.social) ? s.settings.social : {};
-  const [instagram, setInstagram] = useState(social.instagram || '');
-  const [email, setEmail] = useState(social.email || '');
   const [accent, setAccentVal] = useState(s.settings?.accent || '');
   const [css, setCss] = useState(s.settings?.custom_css || '');
-
-  const commitSocial = () => e.ops.setSocial({ ...(social || {}), instagram, email });
 
   return (
     <div>
@@ -85,11 +83,8 @@ function SitePanel({ e }) {
         </Field>
       </Group>
       <Group title="Footer & links">
-        <Field label="Footer note">
-          <Input value={footer} onChange={(ev) => setFooter(ev.target.value)} onBlur={() => footer !== (s.settings?.footer || '') && e.ops.setSite({ settings: { ...(s.settings || {}), footer } }, { reload: true })} placeholder="© Your name" />
-        </Field>
-        <Field label="Instagram" className="mt-3"><Input value={instagram} onChange={(ev) => setInstagram(ev.target.value)} onBlur={commitSocial} placeholder="https://instagram.com/you" /></Field>
-        <Field label="Email" className="mt-3"><Input value={email} onChange={(ev) => setEmail(ev.target.value)} onBlur={commitSocial} placeholder="you@studio.com" /></Field>
+        <p className="text-[13px] text-ink-muted mb-2.5 leading-snug">Your footer holds columns of text, links and social icons. Build it visually — columns, blocks, colours and spacing.</p>
+        <Button variant="secondary" icon="layout" className="w-full" onClick={() => selectFooterFrom(e)}>Edit footer & links</Button>
       </Group>
       <Group title="Design">
         <Field label="Accent colour" hint="Buttons, links and highlights across your site.">
@@ -394,18 +389,24 @@ const BLOCK_ADDERS = [
   { type: 'subheading', label: 'Subheading', icon: 'layout' },
   { type: 'paragraph', label: 'Paragraph', icon: 'file' },
   { type: 'quote', label: 'Quote', icon: 'edit' },
+  { type: 'table', label: 'Table', icon: 'grid' },
   { type: 'image', label: 'Image', icon: 'image' },
 ];
+const HEADING_LEVELS = [1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: `H${n}` }));
+const TEXT_ALIGN = [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }];
+const IMAGE_ALIGN = [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }, { value: 'full', label: 'Full' }];
+
 function PagePanel({ e, id }) {
   const p = findPage(e.draft, id);
   const meta = e.pagesById[id] || {};
   const [title, setTitle] = useState(p?.title || '');
   const [picking, setPicking] = useState(false); // false | 'new' | index
-  useEffect(() => { setTitle(p?.title || ''); }, [id]); // eslint-disable-line
+  const [openBlock, setOpenBlock] = useState(null); // index whose settings are open
+  useEffect(() => { setTitle(p?.title || ''); setOpenBlock(null); }, [id]); // eslint-disable-line
   if (!p) return <PanelHead title="Page" hint="This page is no longer available." />;
 
   const blocks = (p.content || []).map((b, i) => ({ id: `b${i}`, i, block: b }));
-  const addBlock = (type) => { if (type === 'image') setPicking('new'); else e.ops.addBlock(id, { type, text: '' }); };
+  const addBlock = (type) => { if (type === 'image') setPicking('new'); else e.ops.addBlock(id, newPageBlock(type)); };
 
   return (
     <div>
@@ -427,21 +428,30 @@ function PagePanel({ e, id }) {
         {blocks.length === 0 ? (
           <p className="text-sm text-ink-faint">Empty page. Add a block below — it appears on the canvas right away.</p>
         ) : (
-          <Sortable items={blocks} onReorder={(next) => e.ops.reorderBlocks(id, next.map((b) => b.block))} className="space-y-1.5">
+          <Sortable items={blocks} onReorder={(next) => { setOpenBlock(null); e.ops.reorderBlocks(id, next.map((b) => b.block)); }} className="space-y-1.5">
             {(row) => (
               <div className="card p-2.5 flex items-center gap-2.5">
                 <span className="text-ink-faint cursor-grab flex-none"><Icon name="drag" size={16} /></span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-mono uppercase tracking-wide text-ink-faint">{row.block.type}</div>
-                  <div className="text-[13px] text-ink truncate">
-                    {row.block.type === 'image' ? (row.block.caption || 'Image') : (row.block.text || <span className="text-ink-faint">Empty — type on the page</span>)}
-                  </div>
+                  <div className="text-[10px] font-mono uppercase tracking-wide text-ink-faint">{blockLabel(row.block)}</div>
+                  <div className="text-[13px] text-ink truncate">{blockPreview(row.block)}</div>
                 </div>
                 {row.block.type === 'image' && <IconButton name="image" label="Replace image" size="sm" onClick={() => setPicking(row.i)} />}
-                <IconButton name="x" label="Remove block" size="sm" className="hover:text-danger" onClick={() => e.ops.removeBlock(id, row.i)} />
+                <IconButton name="settings" label="Block settings" size="sm" className={openBlock === row.i ? '!text-accent' : ''}
+                  onClick={() => setOpenBlock((o) => (o === row.i ? null : row.i))} />
+                <IconButton name="x" label="Remove block" size="sm" className="hover:text-danger" onClick={() => { if (openBlock === row.i) setOpenBlock(null); e.ops.removeBlock(id, row.i); }} />
               </div>
             )}
           </Sortable>
+        )}
+        {openBlock != null && p.content[openBlock] && (
+          <div className="mt-2 card p-3 border-accent/40" style={{ borderColor: 'color-mix(in srgb, var(--accent) 40%, var(--border))' }}>
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="eyebrow">{blockLabel(p.content[openBlock])} settings</div>
+              <button onClick={() => setOpenBlock(null)} className="text-ink-faint hover:text-ink" aria-label="Close"><Icon name="x" size={14} /></button>
+            </div>
+            <BlockSettings key={openBlock} e={e} pageId={id} index={openBlock} block={p.content[openBlock]} onReplace={() => setPicking(openBlock)} />
+          </div>
         )}
         <div className="flex flex-wrap gap-1.5 mt-3">
           {BLOCK_ADDERS.map((b) => (
@@ -460,8 +470,363 @@ function PagePanel({ e, id }) {
         <ImagePicker open multiple={false} title="Insert image" onClose={() => setPicking(false)}
           onConfirm={(ids, imgs) => {
             const src = imgs[0]?.variants?.large?.jpg || imgs[0]?.variants?.medium?.jpg;
-            if (picking === 'new') e.ops.addBlock(id, { type: 'image', src, caption: imgs[0]?.title || '' });
+            if (picking === 'new') e.ops.addBlock(id, { ...newPageBlock('image'), src, caption: imgs[0]?.title || '' });
             else e.ops.updateBlock(id, picking, { src, caption: imgs[0]?.title || '' });
+            setPicking(false);
+          }} />
+      )}
+    </div>
+  );
+}
+
+function blockLabel(b) {
+  if (b.type === 'heading') return `Heading H${b.level || 2}`;
+  return b.type;
+}
+function blockPreview(b) {
+  if (b.type === 'image') return b.caption || 'Image';
+  if (b.type === 'table') { const rows = b.rows || []; return `${rows.length}×${rows[0]?.length || 0} table`; }
+  return b.text || <span className="text-ink-faint">Empty — type on the page</span>;
+}
+
+// A range slider that only commits (fires a canvas re-render) when you release,
+// so dragging feels smooth instead of firing a fragment reload per tick.
+function RangeCommit({ min, max, step = 1, value, onCommit, label }) {
+  const [v, setV] = useState(value);
+  useEffect(() => { setV(value); }, [value]);
+  return (
+    <div>
+      {label && <div className="label">{label(v)}</div>}
+      <input type="range" min={min} max={max} step={step} value={v}
+        onChange={(ev) => setV(+ev.target.value)}
+        onMouseUp={(ev) => onCommit(+ev.target.value)}
+        onTouchEnd={(ev) => onCommit(+ev.target.value)}
+        onKeyUp={(ev) => onCommit(+ev.target.value)}
+        className="w-full accent-[var(--accent)]" />
+    </div>
+  );
+}
+
+function BlockSettings({ e, pageId, index, block, onReplace }) {
+  const update = (patch) => e.ops.updateBlock(pageId, index, patch);
+  const type = block.type;
+  if (type === 'heading') {
+    return (
+      <div className="space-y-2.5">
+        <Field label="Level"><Segmented value={String(block.level || 2)} onChange={(v) => update({ level: +v })} options={HEADING_LEVELS} /></Field>
+        <Field label="Alignment"><Segmented value={block.align || 'left'} onChange={(v) => update({ align: v })} options={TEXT_ALIGN} /></Field>
+      </div>
+    );
+  }
+  if (type === 'subheading' || type === 'paragraph' || type === 'quote') {
+    return <Field label="Alignment"><Segmented value={block.align || 'left'} onChange={(v) => update({ align: v })} options={TEXT_ALIGN} /></Field>;
+  }
+  if (type === 'image') return <ImageBlockSettings block={block} update={update} onReplace={onReplace} />;
+  if (type === 'table') return <TableEditor block={block} update={update} />;
+  return null;
+}
+
+function ImageBlockSettings({ block, update, onReplace }) {
+  const border = block.border || { width: 0, color: '', radius: 0 };
+  const setBorder = (patch) => update({ border: { ...border, ...patch } });
+  return (
+    <div className="space-y-2.5">
+      <Field label="Position & size"><Segmented value={block.align || 'center'} onChange={(v) => update({ align: v })} options={IMAGE_ALIGN} /></Field>
+      {block.align !== 'full' && (
+        <RangeCommit min={20} max={100} step={5} value={block.width ?? 100} onCommit={(v) => update({ width: v })} label={(v) => `Width · ${v}%`} />
+      )}
+      <div className="grid grid-cols-2 gap-3 items-end">
+        <RangeCommit min={0} max={12} value={border.width || 0} onCommit={(v) => setBorder({ width: v })} label={(v) => `Border · ${v}px`} />
+        <ColorField label="Border colour" value={border.color || ''} onChange={(v) => setBorder({ color: v })} />
+      </div>
+      <RangeCommit min={0} max={40} value={border.radius || 0} onCommit={(v) => setBorder({ radius: v })} label={(v) => `Corner radius · ${v}px`} />
+      <button className="link text-[13px]" onClick={onReplace}>Replace image…</button>
+    </div>
+  );
+}
+
+function TableEditor({ block, update }) {
+  const [rows, setRows] = useState(() => (block.rows || []).map((r) => r.slice()));
+  useEffect(() => { setRows((block.rows || []).map((r) => r.slice())); }, [block]); // eslint-disable-line
+  const cols = rows[0]?.length || 0;
+  const commit = (next) => update({ rows: next });
+  const setCell = (ri, ci, val) => setRows((rs) => rs.map((r, i) => (i === ri ? r.map((c, j) => (j === ci ? val : c)) : r)));
+  const addRow = () => { const next = [...rows, Array(cols || 1).fill('')]; setRows(next); commit(next); };
+  const addCol = () => { const next = rows.map((r) => [...r, '']); setRows(next); commit(next); };
+  const removeRow = (ri) => { const next = rows.filter((_, i) => i !== ri); setRows(next); commit(next); };
+  const removeCol = () => { const next = rows.map((r) => r.slice(0, -1)); setRows(next); commit(next); };
+  return (
+    <div className="space-y-2.5">
+      <Toggle checked={!!block.header} onChange={(v) => update({ header: v })} label="First row is a header" />
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[12px]">
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={ri}>
+                {row.map((cell, ci) => (
+                  <td key={ci} className="p-0.5">
+                    <input value={cell} onChange={(ev) => setCell(ri, ci, ev.target.value)} onBlur={() => commit(rows)}
+                      className="input !h-8 !px-1.5 !text-[12px] w-full min-w-[64px]" placeholder={block.header && ri === 0 ? 'Header' : ''} />
+                  </td>
+                ))}
+                <td className="p-0.5 align-middle">
+                  <button onClick={() => removeRow(ri)} disabled={rows.length <= 1} aria-label="Remove row"
+                    className="w-6 h-6 grid place-items-center text-ink-faint hover:text-danger disabled:opacity-30"><Icon name="x" size={12} /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        <Button size="sm" variant="secondary" icon="plus" onClick={addRow}>Row</Button>
+        <Button size="sm" variant="secondary" icon="plus" onClick={addCol}>Column</Button>
+        {cols > 1 && <Button size="sm" variant="ghost" onClick={removeCol}>Remove last column</Button>}
+      </div>
+    </div>
+  );
+}
+
+/* Footer ------------------------------------------------------------------ */
+// Select + reveal the footer on the canvas (used from the Site panel button).
+function selectFooterFrom(e) {
+  e.setSelection({ kind: 'footer' });
+  e.postToCanvas('select', { region: 'footer' });
+  e.postToCanvas('scroll-to', { region: 'footer' });
+}
+
+function ColorField({ label, value, onChange }) {
+  const valid = /^#[0-9a-fA-F]{6}$/.test(value || '');
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-1.5">
+        <input type="color" value={valid ? value : '#111111'} aria-label={label}
+          onChange={(ev) => onChange(ev.target.value)}
+          className="w-8 h-8 flex-none rounded-md border bg-surface cursor-pointer p-0.5" />
+        {value ? (
+          <button onClick={() => onChange('')} title="Clear"
+            className="flex-none w-8 h-8 grid place-items-center rounded-md border text-ink-muted hover:text-ink hover:bg-surface-2"><Icon name="x" size={14} /></button>
+        ) : <span className="text-[11px] text-ink-faint">auto</span>}
+      </div>
+    </Field>
+  );
+}
+
+function FooterPanel({ e }) {
+  const f = readFooter(e.draft);
+  const st = f.style;
+  useEffect(() => {
+    e.postToCanvas('select', { region: 'footer' });
+    e.postToCanvas('scroll-to', { region: 'footer' });
+  }, []); // eslint-disable-line
+  const setStyle = (patch) => e.ops.setFooterStyle(patch);
+
+  return (
+    <div>
+      <PanelHead eyebrow="Footer" title="Footer"
+        hint="The band at the very bottom. Build it from columns and blocks, then style the whole thing. Click any footer text on the canvas to edit it in place." />
+
+      <Group title="Layout">
+        <Field label="Columns">
+          <Segmented value={String(f.columns.length)} onChange={(v) => e.ops.setFooterColumns(+v)}
+            options={[1, 2, 3, 4].map((n) => ({ value: String(n), label: String(n) }))} />
+        </Field>
+        <Field label="Alignment" className="mt-3">
+          <Segmented value={st.align} onChange={(v) => setStyle({ align: v })}
+            options={[{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }]} />
+        </Field>
+      </Group>
+
+      {f.columns.map((col, ci) => (
+        <FooterColumn key={ci} e={e} col={col} ci={ci} single={f.columns.length === 1} />
+      ))}
+
+      <Group title="Style">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Font"><Segmented value={st.font_family} onChange={(v) => setStyle({ font_family: v })} options={FOOTER_FONTS} /></Field>
+          <Field label={`Size · ${st.font_size}px`}>
+            <input type="range" min="11" max="20" value={st.font_size} onChange={(ev) => setStyle({ font_size: +ev.target.value })} className="w-full accent-[var(--accent)]" />
+          </Field>
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          <ColorField label="Background" value={st.bg} onChange={(v) => setStyle({ bg: v })} />
+          <ColorField label="Text" value={st.color} onChange={(v) => setStyle({ color: v })} />
+          <ColorField label="Links" value={st.link_color} onChange={(v) => setStyle({ link_color: v })} />
+        </div>
+        <Field label={`Vertical padding · ${st.padding_y}px`} className="mt-3">
+          <input type="range" min="0" max="120" step="4" value={st.padding_y} onChange={(ev) => setStyle({ padding_y: +ev.target.value })} className="w-full accent-[var(--accent)]" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3 mt-3 items-end">
+          <Field label={`Top border · ${st.border_top_width}px`}>
+            <input type="range" min="0" max="6" value={st.border_top_width} onChange={(ev) => setStyle({ border_top_width: +ev.target.value })} className="w-full accent-[var(--accent)]" />
+          </Field>
+          <ColorField label="Border colour" value={st.border_top_color} onChange={(v) => setStyle({ border_top_color: v })} />
+        </div>
+      </Group>
+
+      <Group title="Credit">
+        <Toggle checked={f.show_credit} onChange={(v) => e.ops.setFooterCredit(v)} label="Show “Made with Fotolio”" />
+        <Hint>A small credit line under the columns. You’re free to turn it off.</Hint>
+      </Group>
+    </div>
+  );
+}
+
+function FooterColumn({ e, col, ci, single }) {
+  const [adding, setAdding] = useState(false);
+  const blocks = col.blocks || [];
+  return (
+    <Group title={single ? 'Blocks' : `Column ${ci + 1}`}
+      action={<Button size="sm" variant="secondary" icon="plus" onClick={() => setAdding((a) => !a)}>Add</Button>}>
+      {adding && (
+        <div className="flex flex-wrap gap-1 mb-2.5 p-2 rounded-md bg-surface-2">
+          {FOOTER_BLOCKS.map((b) => (
+            <Button key={b.type} size="sm" variant="ghost" icon={b.icon}
+              onClick={() => { e.ops.addFooterBlock(ci, newFooterBlock(b.type)); setAdding(false); }}>{b.label}</Button>
+          ))}
+        </div>
+      )}
+      {blocks.length === 0 ? (
+        <p className="text-sm text-ink-faint">Empty column. Add a block above.</p>
+      ) : (
+        <div className="space-y-2">
+          {blocks.map((b, bi) => (
+            <FooterBlockRow key={`${bi}:${b.type}`} e={e} ci={ci} bi={bi} block={b} count={blocks.length} />
+          ))}
+        </div>
+      )}
+    </Group>
+  );
+}
+
+function FooterBlockRow({ e, ci, bi, block, count }) {
+  const type = block.type;
+  const move = (dir) => e.ops.moveFooterBlock(ci, bi, dir);
+  return (
+    <div className="card p-2.5">
+      <div className="flex items-center gap-1.5 mb-2">
+        <span className="text-[10px] font-mono uppercase tracking-wide text-ink-faint flex-1">{type}</span>
+        <button disabled={bi === 0} onClick={() => move(-1)} aria-label="Move up"
+          className="w-6 h-6 grid place-items-center rounded text-ink-faint hover:text-ink hover:bg-surface-2 disabled:opacity-30 disabled:hover:bg-transparent"><Icon name="chevronDown" size={14} className="rotate-180" /></button>
+        <button disabled={bi === count - 1} onClick={() => move(1)} aria-label="Move down"
+          className="w-6 h-6 grid place-items-center rounded text-ink-faint hover:text-ink hover:bg-surface-2 disabled:opacity-30 disabled:hover:bg-transparent"><Icon name="chevronDown" size={14} /></button>
+        <button onClick={() => e.ops.removeFooterBlock(ci, bi)} aria-label="Remove block"
+          className="w-6 h-6 grid place-items-center rounded text-ink-faint hover:text-danger"><Icon name="x" size={14} /></button>
+      </div>
+      <FooterBlockBody e={e} ci={ci} bi={bi} block={block} />
+    </div>
+  );
+}
+
+function FooterBlockBody({ e, ci, bi, block }) {
+  const type = block.type;
+  const update = (patch) => e.ops.updateFooterBlock(ci, bi, patch);
+
+  if (type === 'heading' || type === 'text') {
+    return <FooterTextEditor block={block} multiline={type === 'text'} onCommit={(text) => update({ text })} />;
+  }
+  if (type === 'links') return <FooterLinksEditor block={block} onCommit={update} />;
+  if (type === 'social') return <FooterSocialEditor block={block} onCommit={(items) => update({ items })} />;
+  if (type === 'image') return <FooterImageEditor e={e} block={block} onCommit={update} />;
+  if (type === 'spacer') {
+    return (
+      <Field label={`Height · ${block.size ?? 16}px`}>
+        <input type="range" min="4" max="120" step="4" value={block.size ?? 16} onChange={(ev) => update({ size: +ev.target.value })} className="w-full accent-[var(--accent)]" />
+      </Field>
+    );
+  }
+  return <p className="text-[12px] text-ink-faint">A horizontal divider line.</p>;
+}
+
+function FooterTextEditor({ block, multiline, onCommit }) {
+  const [text, setText] = useState(block.text || '');
+  useEffect(() => { setText(block.text || ''); }, [block]);
+  const commit = () => { if (text !== (block.text || '')) onCommit(text); };
+  const Cmp = multiline ? Textarea : Input;
+  return <Cmp value={text} rows={multiline ? 2 : undefined} onChange={(ev) => setText(ev.target.value)} onBlur={commit}
+    placeholder={multiline ? 'A line of text…' : 'Heading'} />;
+}
+
+function FooterLinksEditor({ block, onCommit }) {
+  const [items, setItems] = useState(() => (block.items?.length ? block.items : [{ label: '', href: '' }]));
+  useEffect(() => { setItems(block.items?.length ? block.items : [{ label: '', href: '' }]); }, [block]);
+  const commit = (next) => onCommit({ items: next.filter((it) => (it.label || '').trim() || (it.href || '').trim()) });
+  const setAt = (i, patch) => setItems((l) => l.map((it, j) => (j === i ? { ...it, ...patch } : it)));
+  const add = () => setItems((l) => [...l, { label: '', href: '' }]);
+  const remove = (i) => { const next = items.filter((_, j) => j !== i); setItems(next); commit(next); };
+  return (
+    <div className="space-y-2">
+      <Toggle checked={!!block.inline} onChange={(v) => onCommit({ inline: v })} label="Lay out in a row" />
+      {items.map((it, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <Input value={it.label} onChange={(ev) => setAt(i, { label: ev.target.value })} onBlur={() => commit(items)} placeholder="Label" className="flex-1" />
+          <Input value={it.href} onChange={(ev) => setAt(i, { href: ev.target.value })} onBlur={() => commit(items)} placeholder="https://…" className="flex-1" />
+          <button onClick={() => remove(i)} aria-label="Remove link" className="flex-none w-8 h-8 grid place-items-center rounded-md text-ink-faint hover:text-danger"><Icon name="x" size={14} /></button>
+        </div>
+      ))}
+      <button className="link text-[13px]" onClick={add}>+ Add link</button>
+    </div>
+  );
+}
+
+function FooterSocialEditor({ block, onCommit }) {
+  const items = block.items && !Array.isArray(block.items) ? block.items : {};
+  const present = SOCIAL_NETWORKS.filter((n) => n.key in items);
+  const missing = SOCIAL_NETWORKS.filter((n) => !(n.key in items));
+  const [drafts, setDrafts] = useState(items);
+  useEffect(() => { setDrafts(items); }, [block]); // eslint-disable-line
+  const commit = (next) => {
+    const cleaned = {};
+    for (const [k, v] of Object.entries(next)) if ((v || '').trim()) cleaned[k] = v.trim();
+    onCommit(cleaned);
+  };
+  const setAt = (key, val) => setDrafts((d) => ({ ...d, [key]: val }));
+  const addNetwork = (key) => { const next = { ...drafts, [key]: '' }; setDrafts(next); };
+  const removeNetwork = (key) => { const next = { ...drafts }; delete next[key]; setDrafts(next); commit(next); };
+
+  return (
+    <div className="space-y-2">
+      {present.length === 0 && <p className="text-[12px] text-ink-faint">No networks yet — add one below.</p>}
+      {present.map((n) => (
+        <div key={n.key} className="flex items-center gap-1.5">
+          <span className="text-[12px] w-20 flex-none text-ink-muted">{n.label}</span>
+          <Input value={drafts[n.key] ?? ''} onChange={(ev) => setAt(n.key, ev.target.value)} onBlur={() => commit(drafts)}
+            placeholder={n.key === 'email' ? 'you@studio.com' : n.key === 'phone' ? '+41 …' : 'URL or handle'} className="flex-1" />
+          <button onClick={() => removeNetwork(n.key)} aria-label="Remove" className="flex-none w-8 h-8 grid place-items-center rounded-md text-ink-faint hover:text-danger"><Icon name="x" size={14} /></button>
+        </div>
+      ))}
+      {missing.length > 0 && (
+        <Select value="" onChange={(ev) => ev.target.value && addNetwork(ev.target.value)}>
+          <option value="">Add a network…</option>
+          {missing.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
+        </Select>
+      )}
+    </div>
+  );
+}
+
+function FooterImageEditor({ e, block, onCommit }) {
+  const [picking, setPicking] = useState(false);
+  const [alt, setAlt] = useState(block.alt || '');
+  const [href, setHref] = useState(block.href || '');
+  useEffect(() => { setAlt(block.alt || ''); setHref(block.href || ''); }, [block]);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        {block.src ? <img src={block.src} alt="" className="w-12 h-12 object-cover rounded border" /> : <div className="w-12 h-12 rounded border grid place-items-center text-ink-faint bg-surface-2"><Icon name="image" size={16} /></div>}
+        <Button size="sm" variant="secondary" icon="image" onClick={() => setPicking(true)}>{block.src ? 'Replace' : 'Choose'}</Button>
+        {block.src && <button className="link text-[13px]" onClick={() => onCommit({ src: '' })}>Remove</button>}
+      </div>
+      <Field label={`Width · ${block.width ?? 120}px`}>
+        <input type="range" min="24" max="400" step="4" value={block.width ?? 120} onChange={(ev) => onCommit({ width: +ev.target.value })} className="w-full accent-[var(--accent)]" />
+      </Field>
+      <Input value={alt} onChange={(ev) => setAlt(ev.target.value)} onBlur={() => alt !== (block.alt || '') && onCommit({ alt })} placeholder="Alt text" />
+      <Input value={href} onChange={(ev) => setHref(ev.target.value)} onBlur={() => href !== (block.href || '') && onCommit({ href })} placeholder="Link (optional)" />
+      {picking && (
+        <ImagePicker open multiple={false} title="Choose footer image" onClose={() => setPicking(false)}
+          onConfirm={(ids, imgs) => {
+            const src = imgs[0]?.variants?.medium?.jpg || imgs[0]?.variants?.large?.jpg || imgs[0]?.variants?.thumb?.jpg;
+            onCommit({ src, alt: imgs[0]?.title || alt });
             setPicking(false);
           }} />
       )}

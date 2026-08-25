@@ -145,9 +145,9 @@ final class ImageService
         $this->siteRow($siteId, $imageId); // ownership check
         $fields = [];
         foreach (['title', 'location', 'description', 'capture_method', 'camera_make', 'camera_model',
-                  'lens', 'focal_length', 'aperture', 'shutter', 'iso'] as $key) {
+                  'lens', 'focal_length', 'aperture', 'shutter', 'iso', 'gps_lat', 'gps_lng'] as $key) {
             if (array_key_exists($key, $data)) {
-                $fields[$key] = $data[$key] === '' ? null : $data[$key];
+                $fields[$key] = $data[$key] === '' || $data[$key] === null ? null : $data[$key];
             }
         }
         if (array_key_exists('tags', $data)) {

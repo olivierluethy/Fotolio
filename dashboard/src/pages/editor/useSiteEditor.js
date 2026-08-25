@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { clone, ensureHeader, findGallery, findPage, navItems } from './draftUtils';
+import { clone, ensureFooter, ensureHeader, findGallery, findPage, navItems } from './draftUtils';
 
 /**
  * The brain of the live Site Editor: loads the draft + entity identity, keeps a
@@ -209,6 +209,11 @@ export function useSiteEditor() {
         const [idxS, field] = path.slice(6).split(':');
         const p = findPage(d, c.pageId);
         if (p && p.content[+idxS]) p.content[+idxS][field === 'caption' ? 'caption' : 'text'] = value;
+      } else if (path.startsWith('footer:')) {
+        const [, colS, idxS] = path.split(':');
+        const f = ensureFooter(d);
+        const b = f.columns[+colS]?.blocks?.[+idxS];
+        if (b) b.text = value;
       }
     }, { group: true });
     if (path === 'gallery.name') postNav();
@@ -221,12 +226,18 @@ export function useSiteEditor() {
     else if (d.region === 'home-grid') setSelection({ kind: 'gallery', id: Number(c.galleryId) });
     else if (d.region === 'page') setSelection({ kind: 'page', id: Number(d.id) });
     else if (d.region === 'subnav') setSelection({ kind: 'nav' });
+    else if (d.region === 'footer') setSelection({ kind: 'footer' });
   }, []);
 
   const removeBlockFromCanvas = useCallback((index) => {
     const c = ctxRef.current;
     mutate((d) => { const p = findPage(d, c.pageId); if (p) p.content.splice(index, 1); });
     reloadFragment('main');
+  }, [mutate, reloadFragment]);
+
+  const removeFooterBlockFromCanvas = useCallback((col, index) => {
+    mutate((d) => { const f = ensureFooter(d); f.columns[col]?.blocks?.splice(index, 1); });
+    reloadFragment('footer');
   }, [mutate, reloadFragment]);
 
   const onReady = useCallback((c) => {
@@ -249,13 +260,14 @@ export function useSiteEditor() {
         case 'select': onCanvasSelect(d); break;
         case 'navigate': navigateCanvas(d.path); break;
         case 'block-remove': removeBlockFromCanvas(d.index); break;
+        case 'footer-block-remove': removeFooterBlockFromCanvas(d.col, d.index); break;
         case 'shortcut': d.action === 'redo' ? redo() : undo(); break;
         default: break;
       }
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [applyCanvasEdit, onCanvasSelect, navigateCanvas, removeBlockFromCanvas, onReady, undo, redo]);
+  }, [applyCanvasEdit, onCanvasSelect, navigateCanvas, removeBlockFromCanvas, removeFooterBlockFromCanvas, onReady, undo, redo]);
 
   // Undo/redo keyboard shortcuts while focus is in the dashboard chrome. When
   // focus is inside the canvas iframe, editor-bridge.js forwards the same keys.
@@ -387,6 +399,51 @@ export function useSiteEditor() {
       mutate((d) => { d.site.settings = { ...(d.site.settings || {}), custom_css: css }; }, { group: true });
       postToCanvas('custom-css', { css });
     },
+
+    // Footer — a block-based region living at site.settings.footer. Style
+    // changes preview live via the bridge (no reload); structural changes
+    // (columns / blocks / link + social + image content) re-render the footer
+    // fragment. Text inside heading/text blocks is edited inline on the canvas.
+    setFooterStyle(patch) {
+      let style;
+      mutate((d) => { const f = ensureFooter(d); f.style = { ...f.style, ...patch }; style = f.style; }, { group: true });
+      postToCanvas('footer-style', { style });
+    },
+    setFooterCredit(show) {
+      mutate((d) => { ensureFooter(d).show_credit = !!show; });
+      reloadFragment('footer');
+    },
+    setFooterColumns(count) {
+      mutate((d) => {
+        const f = ensureFooter(d);
+        const n = Math.max(1, Math.min(4, count));
+        while (f.columns.length < n) f.columns.push({ blocks: [] });
+        if (f.columns.length > n) f.columns = f.columns.slice(0, n);
+      });
+      reloadFragment('footer');
+    },
+    addFooterBlock(col, block) {
+      mutate((d) => { const f = ensureFooter(d); if (!f.columns[col]) f.columns[col] = { blocks: [] }; f.columns[col].blocks.push(block); });
+      reloadFragment('footer');
+    },
+    removeFooterBlock(col, index) {
+      mutate((d) => { const f = ensureFooter(d); f.columns[col]?.blocks?.splice(index, 1); });
+      reloadFragment('footer');
+    },
+    updateFooterBlock(col, index, patch) {
+      mutate((d) => { const f = ensureFooter(d); const b = f.columns[col]?.blocks?.[index]; if (b) Object.assign(b, patch); }, { group: true });
+      reloadFragment('footer');
+    },
+    moveFooterBlock(col, index, dir) {
+      mutate((d) => {
+        const f = ensureFooter(d);
+        const blocks = f.columns[col]?.blocks;
+        const j = index + dir;
+        if (!blocks || j < 0 || j >= blocks.length) return;
+        [blocks[index], blocks[j]] = [blocks[j], blocks[index]];
+      });
+      reloadFragment('footer');
+    },
   }), [mutate, postNav, postToCanvas, reloadFragment, reloadFull, galleriesById]);
 
   // ---- Entity CRUD (galleries / pages are table-backed) -----------------
@@ -450,7 +507,7 @@ export function useSiteEditor() {
   return {
     loading, draft, galleries, pages, images, galleriesById, pagesById, imagesById,
     ctx, selection, setSelection, saving, dirty, publishedLive, lastPublishedAt, publicUrl,
-    canvasRef, canvasSrc, navigateCanvas, reloadFull, buildHref,
+    canvasRef, canvasSrc, navigateCanvas, reloadFull, buildHref, postToCanvas,
     ops, createGallery, deleteGallery, createPage, deletePage,
     publish, discard, openPreview,
     undo, redo, canUndo: histLen > 0, canRedo: futLen > 0,

@@ -49,7 +49,8 @@
     var el = e.target.closest ? e.target.closest('[data-editable]') : null;
     if (!el) return;
     var w = el.closest('[data-block-type]');
-    var multi = w && (w.getAttribute('data-block-type') === 'paragraph' || w.getAttribute('data-block-type') === 'quote');
+    var bt = w && w.getAttribute('data-block-type');
+    var multi = bt === 'paragraph' || bt === 'quote' || bt === 'footer-text';
     if (!multi) { e.preventDefault(); el.blur(); }
   });
 
@@ -70,6 +71,14 @@
 
     var a = t.closest ? t.closest('a[href]') : null;
     if (a) {
+      // Footer links are external (Instagram, email, …); in the editor a click
+      // should select the footer for editing, never navigate the canvas away.
+      if (a.closest('.site-footer')) {
+        e.preventDefault();
+        var footer = a.closest('.site-footer');
+        selectRegion(footer); emitSelect(footer);
+        return;
+      }
       var href = a.getAttribute('href') || '';
       var internal = href.indexOf('editor/render') > -1 || href.indexOf('/preview') > -1
         || a.hasAttribute('data-nav-home') || a.hasAttribute('data-nav-item')
@@ -84,6 +93,14 @@
 
     var rm = t.closest ? t.closest('[data-block-remove]') : null;
     if (rm) { e.preventDefault(); post('block-remove', { index: parseInt(rm.getAttribute('data-block-remove'), 10) }); return; }
+
+    var frm = t.closest ? t.closest('[data-footer-remove]') : null;
+    if (frm) {
+      e.preventDefault();
+      var parts = (frm.getAttribute('data-footer-remove') || '').split(':');
+      post('footer-block-remove', { col: parseInt(parts[0], 10), index: parseInt(parts[1], 10) });
+      return;
+    }
 
     var hint = t.closest ? t.closest('[data-edit-open]') : null;
     if (hint) { e.preventDefault(); selectRegion(document.querySelector('.hero')); post('select', { region: 'hero', id: null }); return; }
@@ -127,8 +144,29 @@
       case 'scroll-to': scrollToRegion(d.region, d.id); break;
       case 'accent': setAccent(d.value); break;
       case 'custom-css': setCustomCss(d.css); break;
+      case 'footer-style': footerStyle(d.style || {}); break;
     }
   });
+
+  // Live footer restyle (colours / fonts / spacing / border / alignment) without
+  // a reload; structural changes go through a 'footer' fragment reload instead.
+  function footerStyle(st) {
+    var f = document.querySelector('.site-footer');
+    if (!f) return;
+    var fam = { ui: 'var(--font-ui)', display: 'var(--font-display)', mono: 'var(--font-mono)' }[st.font_family] || 'var(--font-ui)';
+    f.style.fontFamily = fam;
+    f.style.textAlign = st.align || 'left';
+    f.setAttribute('data-align', st.align || 'left');
+    f.style.backgroundColor = st.bg || '';
+    f.style.color = st.color || '';
+    f.style.setProperty('--footer-link', st.link_color || '');
+    f.style.fontSize = st.font_size ? st.font_size + 'px' : '';
+    f.style.fontWeight = st.font_weight || '';
+    var py = (st.padding_y | 0);
+    f.style.paddingTop = py + 'px'; f.style.paddingBottom = py + 'px';
+    var bw = Math.max(0, st.border_top_width | 0);
+    f.style.borderTop = bw + 'px solid ' + (st.border_top_color || 'var(--border)');
+  }
 
   function setAccent(value) {
     if (value) document.documentElement.style.setProperty('--accent', value);
@@ -207,6 +245,7 @@
     fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
       if (fragment === 'hero') swapHero(html);
       else if (fragment === 'subnav') swapOuter('nav.subnav', html);
+      else if (fragment === 'footer') swapOuter('footer.site-footer', html);
       else if (fragment === 'main') { var m = document.querySelector('main'); if (m) { m.innerHTML = html; } }
     }).catch(function () {});
   }

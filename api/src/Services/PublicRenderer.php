@@ -90,6 +90,7 @@ final class PublicRenderer
             'images' => $images,
             'header' => $header,
             'headerImages' => $this->resolveHeaderImages($header, $site),
+            'footer' => FooterService::resolve(is_array($site['settings'] ?? null) ? $site['settings'] : []),
             'mode' => $mode,
             'editable' => $mode === 'edit',
             'renderer' => $this,
@@ -118,6 +119,8 @@ final class PublicRenderer
                 return $view === 'page'
                     ? $this->view('page', $data)
                     : $this->view('gallery', $data);
+            case 'footer':
+                return $this->view('_footer', $data);
             default:
                 return '';
         }

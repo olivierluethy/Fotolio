@@ -13,7 +13,7 @@ export function getToken() {
   return accessToken;
 }
 
-async function raw(method, path, { body, isForm, auth = true } = {}) {
+async function raw(method, path, { body, isForm, auth = true, signal } = {}) {
   const headers = {};
   if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
   let payload = body;
@@ -26,6 +26,7 @@ async function raw(method, path, { body, isForm, auth = true } = {}) {
     headers,
     body: payload,
     credentials: 'include',
+    signal,
   });
   return res;
 }
