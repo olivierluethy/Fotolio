@@ -1,10 +1,20 @@
 <div align="center">
 
+<img src="api/public/icon-512.png" alt="Fotolio logo" width="140" />
+
 # Fotolio
 
 **A self-service photo-portfolio platform.** Upload photos, let them be optimised for the web
 automatically, arrange them into galleries, design a hero, and publish your own portfolio site — on
 a slug, a subdomain, or your own domain.
+
+<p>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
+  <img alt="PHP" src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind%20CSS-06B6D4?logo=tailwindcss&logoColor=white">
+</p>
 
 </div>
 
@@ -89,3 +99,12 @@ mono "instrument readout" type for all measured data. Full light + dark themes.
   cookie). Google / Facebook / Apple buttons are present and call live stub endpoints that return
   "not configured" until credentials are added.
 - **Not in v1 (by design):** billing, team accounts, empty stub pages.
+
+## License
+
+Released under the [MIT License](LICENSE) © 2026 Olivier Lüthy. You're free to use, modify and distribute this
+software, including commercially, as long as the copyright notice and license are included.
+
+## Author
+
+Built by **Olivier Lüthy** — [GitHub](https://github.com/olivierluethy).
